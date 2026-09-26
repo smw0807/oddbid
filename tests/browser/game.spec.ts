@@ -15,7 +15,7 @@ test('mobile entry, rules dialog, and validation are usable', async ({ page }, t
   watchErrors(page, errors);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('치열한 경매');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('눈치는 필요하고');
   await noHorizontalOverflow(page);
   await page.screenshot({ path: testInfo.outputPath('landing-mobile.png'), fullPage: true });
   await page.getByRole('button', { name: /새 경매장 열기/ }).click();

@@ -181,7 +181,7 @@ function roundName(round: number): string {
         <span v-if="snapshot" class="room-badge"
           ><i :class="{ disconnected: !connected }"></i>{{ snapshot.roomId }}</span
         >
-        <span v-else class="header-tagline">평범한 물건. 수상한 사람들.</span>
+        <span v-else class="header-tagline">입찰은 신중하게. 속마음은 비밀로.</span>
         <button class="text-button rules-button" @click="rules?.showModal()">
           <span class="question-mark">?</span>게임 방법
         </button>
@@ -211,18 +211,16 @@ function roundName(round: number): string {
     <main v-if="!snapshot" class="landing">
       <section class="hero">
         <div class="hero-copy">
-          <div class="eyebrow"><span class="tiny-star">✳</span> THE ODD LITTLE AUCTION CLUB</div>
+          <div class="eyebrow">비공개 경매 · 누구나 입장 가능</div>
           <h1>
-            쓸모없는 물건,<br />쓸데없이<br /><span class="highlight-text">치열한 경매.</span
-            ><span class="heading-star" aria-hidden="true">✳</span>
+            <span class="hero-title-line">쓸모는 없고.</span>
+            <span class="hero-title-line">눈치는 필요하고.</span>
           </h1>
           <p class="hero-description">
-            고무오리에 전 재산을 건 친구.<br />이유가 있을까요? 비밀 미션은 끝나야 알 수 있어요.
+            고무오리에 전 재산을 건 친구.<br />그럴 만한 비밀이 있습니다.
           </p>
           <div class="game-facts">
-            <span><i class="people-icon" aria-hidden="true">♟</i> 3–6명</span
-            ><span><i aria-hidden="true">◷</i> 약 3분</span
-            ><span><i aria-hidden="true">↗</i> 링크 하나로 바로 시작</span>
+            <span>3–6명</span><span>100코인</span><span>5번의 경매</span>
           </div>
           <div class="entry-panel">
             <label for="nickname">오늘의 경매사 이름 <span>최대 12자</span></label>
@@ -272,31 +270,17 @@ function roundName(round: number): string {
         </div>
 
         <div class="hero-visual">
-          <span class="scribble-note"
-            >이 오리, 얼마까지<br />생각하세요?<svg
-              viewBox="0 0 100 70"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M10 5C0 53 62 2 72 46m-14-7 15 10 8-14"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              /></svg
-          ></span>
           <div class="hero-auction-card">
             <div class="card-topline">
-              <span>LOT NO. 001</span
-              ><span class="small-pill">HOT ITEM <span aria-hidden="true">↗</span></span>
+              <span>출품번호 001</span><span class="small-pill">수집품</span>
             </div>
             <div class="hero-art-wrap">
-              <span class="art-rings" aria-hidden="true"></span><ItemArt item="duck" />
-              <div class="round-stamp">100%<br /><span>수상한 물건</span></div>
+              <span class="lot-index" aria-hidden="true">001</span>
+              <ItemArt item="duck" />
+              <span class="lot-stamp">감정 불가</span>
             </div>
             <div class="hero-item-info">
-              <span class="category-label">수집품 · 사용감 조금</span>
+              <span class="category-label">출품 상태 · 사용감 조금</span>
               <h2>수상한 고무오리</h2>
               <p>물에 뜹니다. 비밀도 좀 있습니다.</p>
             </div>
@@ -304,44 +288,40 @@ function roundName(round: number): string {
               <div>
                 <span>현재 최고 입찰가</span><strong>65 <small>코인</small></strong>
               </div>
-              <span class="bidder-example"
-                ><PlayerAvatar :index="2" small /> 오리광인 <span aria-hidden="true">↗</span></span
-              >
+              <span class="bidder-example"><PlayerAvatar :index="2" small /> 오리광인</span>
             </div>
-            <div class="card-perforation"><span>이 물건이 비싼 이유는, 아무도 모릅니다.</span></div>
+            <p class="catalog-mission">
+              <span>누군가의 비밀 미션</span><strong>무슨 일이 있어도 오리를 가져라.</strong>
+            </p>
           </div>
-          <div class="secret-note">
-            <span class="note-lock" aria-hidden="true">✶</span>
-            <div>
-              <span>SHH… YOUR SECRET MISSION</span><strong>무슨 일이 있어도, 오리를 가져라.</strong>
-            </div>
+          <div class="catalog-footnote">
+            <span>예시 도록 · 실제 경매는 5코인부터</span>
+            <span>가치는 입찰자가 정합니다.</span>
           </div>
-          <span class="example-label">게임 화면 예시 · 실제 경매는 5코인부터 시작해요</span>
         </div>
       </section>
 
       <section class="how-it-works" aria-label="OddBid가 재미있는 이유">
-        <div class="section-caption">
-          <span>A LITTLE ODD. A LOT OF FUN.</span><span>룰은 단순하게, 눈치는 빠르게.</span>
-        </div>
+        <div class="section-caption"><span>참가 안내</span><span>진행 순서 / 약 3분</span></div>
         <div class="feature-grid">
           <article>
-            <span class="feature-number">01 /</span>
-            <div class="feature-icon" aria-hidden="true">✉</div>
-            <h3>친구만 데려오세요.</h3>
-            <p>회원가입 없이, 링크 하나로 모여요.<br />혼자라면 봇 2명과 연습할 수 있어요.</p>
+            <span class="feature-number">01</span>
+            <h3>입장.</h3>
+            <p>링크 하나로 친구를 초대하세요.<br />회원가입 없이, 혼자라면 봇 2명과 연습.</p>
           </article>
           <article>
-            <span class="feature-number">02 /</span>
-            <div class="feature-icon" aria-hidden="true">✳</div>
-            <h3>속마음은 비밀이에요.</h3>
-            <p>모두에게 주어진 100코인과 비밀 미션.<br />살지, 포기할지, 눈치 싸움이 시작돼요.</p>
+            <span class="feature-number">02</span>
+            <h3>입찰.</h3>
+            <p>
+              지갑에는 100코인, 속으로는 비밀 미션.<br />각 물건에 25초. 사고 싶다면 손을 드세요.
+            </p>
           </article>
           <article>
-            <span class="feature-number">03 /</span>
-            <div class="feature-icon" aria-hidden="true">⚑</div>
-            <h3>마지막에 다 밝혀져요.</h3>
-            <p>5번의 경매 뒤에 공개되는 진짜 속셈.<br />가장 영리하게 입찰한 사람은 누구?</p>
+            <span class="feature-number">03</span>
+            <h3>공개.</h3>
+            <p>
+              5번의 경매가 끝나면 미션을 공개합니다.<br />남은 코인, 물건 감정가, 미션 점수로 결산.
+            </p>
           </article>
         </div>
       </section>
@@ -349,8 +329,8 @@ function roundName(round: number): string {
 
     <main v-else-if="snapshot.phase === 'lobby'" class="lobby game-main">
       <div class="page-heading">
-        <div class="eyebrow">THE GUEST LIST</div>
-        <h1>수상한 손님들을<br />기다리고 있어요.</h1>
+        <div class="eyebrow">입찰자 명단</div>
+        <h1>입찰자를 기다립니다.</h1>
         <p>
           {{
             snapshot.practice
@@ -388,7 +368,7 @@ function roundName(round: number): string {
               :key="`empty-${slot}`"
               class="guest-row empty-guest"
             >
-              <span class="empty-avatar">+</span><span>수상한 손님을 위한 자리</span>
+              <span class="empty-avatar">+</span><span>입장 대기석</span>
             </div>
           </div>
           <div class="lobby-controls">
@@ -422,13 +402,9 @@ function roundName(round: number): string {
         </section>
         <aside class="invitation-ticket">
           <div class="eyebrow">
-            {{
-              snapshot.practice
-                ? 'A LITTLE PRACTICE GOES A LONG WAY'
-                : 'YOU’RE ODD-FICIALLY INVITED'
-            }}
+            {{ snapshot.practice ? '연습 경매 안내' : '경매장 초대장' }}
           </div>
-          <h2>{{ snapshot.practice ? '눈치도 연습이 필요하죠.' : '초대장이 도착했어요.' }}</h2>
+          <h2>{{ snapshot.practice ? '입찰 전, 한 번 연습.' : '함께 입찰할 사람에게.' }}</h2>
           <ItemArt item="duck" compact /><template v-if="!snapshot.practice"
             ><div class="ticket-code-label">우리 경매장 초대 코드</div>
             <strong class="ticket-code">{{ snapshot.roomId }}</strong
@@ -445,7 +421,7 @@ function roundName(round: number): string {
             <strong>나 + 봇 친구 2명</strong>
             <p>연습 방에서는 봇과 함께해요.<br />친구들과 하려면 새 경매장을 열어주세요.</p>
           </div>
-          <p>100코인 · 5번의 경매 · 나만의 비밀 미션<br />준비물은 오직 눈치뿐.</p>
+          <p>참가비 없음 · 시작 자금 100코인<br />5번의 경매 종료 후 최종 결산</p>
         </aside>
       </div>
     </main>
@@ -457,9 +433,9 @@ function roundName(round: number): string {
       <div class="auction-heading">
         <div>
           <div class="eyebrow">
-            {{ snapshot.practice ? 'PRACTICE AUCTION' : 'AUCTION IN PROGRESS' }}
+            {{ snapshot.practice ? '연습 경매 진행 중' : '경매 진행 중' }}
           </div>
-          <h1>{{ snapshot.phase === 'reveal' ? '탁, 탁, 낙찰!' : '이 물건, 탐나시나요?' }}</h1>
+          <h1>{{ snapshot.phase === 'reveal' ? '이번 출품, 마감.' : '지금 출품된 물건.' }}</h1>
         </div>
         <div class="round-counter">
           <span>ROUND</span
@@ -485,7 +461,7 @@ function roundName(round: number): string {
             <span>LOT NO. {{ String(snapshot.round).padStart(3, '0') }}</span
             ><span class="small-pill">{{ snapshot.currentItem.category }}</span>
           </div>
-          <div class="live-art-wrap" :style="{ '--item-color': snapshot.currentItem.color }">
+          <div class="live-art-wrap">
             <div class="live-art-circle"></div>
             <ItemArt :item="snapshot.currentItem.id" /><span class="value-ticket"
               >감정가<strong>{{ snapshot.currentItem.value }}<small>점</small></strong></span
@@ -568,15 +544,15 @@ function roundName(round: number): string {
           </section>
           <section v-else class="reveal-panel paper-panel" aria-live="polite">
             <span class="reveal-symbol" aria-hidden="true">{{
-              roundResult?.winnerId ? '✳' : '○'
+              roundResult?.winnerId ? 'SOLD' : 'UNSOLD'
             }}</span>
             <div class="eyebrow">
-              {{ roundResult?.winnerId ? 'SOLD TO THE ODD ONE' : 'GOING, GOING… UNSOLD' }}
+              {{ roundResult?.winnerId ? '낙찰 확정' : '유찰 확정' }}
             </div>
             <h2>
               {{
                 roundResult?.winnerName
-                  ? `${roundResult.winnerName} 님의 품으로!`
+                  ? `${roundResult.winnerName} 님 낙찰.`
                   : '이번 물건은 유찰됐어요.'
               }}
             </h2>
@@ -609,7 +585,7 @@ function roundName(round: number): string {
               aria-controls="secret-mission"
               @click="missionVisible = !missionVisible"
             >
-              <span><span aria-hidden="true">✶</span> 나만의 비밀 미션</span
+              <span>나만의 비밀 미션</span
               ><span>{{ missionVisible ? '숨기기 −' : '살짝 보기 +' }}</span>
             </button>
             <div v-if="missionVisible" id="secret-mission" class="mission-content">
@@ -619,14 +595,14 @@ function roundName(round: number): string {
                 <strong>성공하면 +{{ self.mission.bonus }}점</strong></template
               >
               <p v-else>비밀 미션을 받아오는 중이에요.</p>
-              <small>쉿! 다른 사람에게 화면이 보이지 않게 조심하세요.</small>
+              <small>본인만 열람 가능 · 화면 공유에 주의하세요.</small>
             </div>
           </section>
         </aside>
       </div>
       <section class="table-section">
         <div class="panel-heading">
-          <h2>경매장 분위기 <span>눈치 챙기세요 👀</span></h2>
+          <h2>입찰자 현황 <span>공개 자금 및 낙찰 수량</span></h2>
           <div class="reaction-controls">
             <button
               v-for="emoji in REACTIONS"
@@ -693,10 +669,9 @@ function roundName(round: number): string {
 
     <main v-else class="results-page game-main">
       <div class="page-heading">
-        <div class="eyebrow">THE SECRETS ARE OUT</div>
-        <div class="results-flower" aria-hidden="true">✳</div>
-        <h1>이제, 속마음 공개.</h1>
-        <p>그 물건에 그렇게 진심이었던 이유가 있었네요.</p>
+        <div class="eyebrow">경매 종료 · 최종 결산</div>
+        <h1>속마음까지, 공개.</h1>
+        <p>모든 입찰이 끝났습니다. 비밀 미션과 최종 점수를 확인하세요.</p>
       </div>
       <div v-if="ownResult" class="my-result-ticket">
         <span>오늘 나의 성적</span
@@ -709,7 +684,7 @@ function roundName(round: number): string {
       </div>
       <section class="scoreboard paper-panel" aria-label="최종 순위">
         <div class="panel-heading">
-          <h2>오늘의 영리한 입찰자들</h2>
+          <h2>최종 입찰 순위</h2>
           <span>FINAL RESULTS</span>
         </div>
         <article
@@ -725,7 +700,7 @@ function roundName(round: number): string {
             />
             <div>
               <h3>{{ result.name }} <small v-if="result.playerId === self?.playerId">나</small></h3>
-              <span>{{ result.rank === 1 ? '오늘의 경매왕' : '수고했어요, 입찰자님' }}</span>
+              <span>{{ result.rank === 1 ? '최고 득점 입찰자' : '결산 완료' }}</span>
             </div>
             <strong class="result-total">{{ result.total }}<small>점</small></strong>
           </div>
@@ -780,9 +755,9 @@ function roundName(round: number): string {
     </main>
 
     <footer class="site-footer">
-      <span class="footer-wordmark">OddBid</span
-      ><span>좋은 물건은 몰라도, 좋은 시간은 보장합니다.</span
-      ><span>MADE FOR GOOD COMPANY <span aria-hidden="true">✳</span></span>
+      <span class="footer-wordmark">OddBid</span>
+      <span>비밀 미션이 있는 경매 게임.</span>
+      <span>PRIVATE AUCTION / OPEN TO EVERYONE</span>
     </footer>
 
     <dialog
@@ -795,7 +770,7 @@ function roundName(round: number): string {
         <button class="dialog-close" aria-label="게임 방법 닫기" autofocus @click="rules?.close()">
           ×
         </button>
-        <div class="eyebrow">A QUICK FIELD GUIDE</div>
+        <div class="eyebrow">참가 규정</div>
         <h2 id="rules-title">눈치만 챙겨오세요.</h2>
         <p class="rules-intro">3~6명이 함께하는, 약 3분짜리 수상한 경매.</p>
         <ol class="rules-list">
