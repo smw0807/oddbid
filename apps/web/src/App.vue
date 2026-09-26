@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { GAME, ITEMS, REACTIONS, getItem } from '@oddbid/shared';
+import { GAME, ITEMS, REACTIONS, getItem, type BidRequest } from '@oddbid/shared';
 import ItemArt from './components/ItemArt.vue';
 import PlayerAvatar from './components/PlayerAvatar.vue';
 import { useGame } from './composables/useGame';
@@ -60,6 +60,7 @@ const canBid = computed(
   () =>
     connected.value &&
     snapshot.value?.phase === 'auction' &&
+    !!snapshot.value.auctionId &&
     remaining.value > 0 &&
     !leading.value &&
     !bidPending.value &&
@@ -80,9 +81,11 @@ watch(minBid, (value) => {
   selectedBid.value = value;
 });
 watch(
-  () => snapshot.value?.round,
+  () => snapshot.value?.auctionId,
   () => {
     selectedBid.value = minBid.value;
+    clearTimeout(bidTimer);
+    bidPending.value = false;
   },
 );
 watch(
@@ -131,9 +134,10 @@ async function shareRoom(): Promise<void> {
 }
 
 function placeBid(): void {
-  if (!canBid.value) return;
+  const auctionId = snapshot.value?.auctionId;
+  if (!canBid.value || !auctionId) return;
   bidPending.value = true;
-  send('bid', { amount: selectedBid.value });
+  send('bid', { auctionId, amount: selectedBid.value } satisfies BidRequest);
   bidTimer = setTimeout(() => {
     bidPending.value = false;
   }, 400);

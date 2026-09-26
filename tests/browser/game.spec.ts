@@ -114,6 +114,12 @@ test('three browsers bid, restore a session, finish five rounds, and play again'
     await mobile.screenshot({ path: testInfo.outputPath('mission-mobile.png'), fullPage: true });
     await expect(host.locator('.results-page')).toBeVisible({ timeout: 40000 });
     await expect(host.locator('.result-row')).toHaveCount(3);
+    const guestResult = host.locator('.result-row').filter({ hasText: '바나나친구' });
+    await expect(
+      guestResult.locator('.score-equation > span').filter({ hasText: '남은 코인' }).locator('b'),
+    ).toHaveText('90');
+    await expect(guestResult.locator('.won-items > span')).toHaveCount(1);
+    await expect(guestResult.locator('.won-items')).toContainText('10코인');
     await expect(mobile.locator('.results-page')).toBeVisible();
     await noHorizontalOverflow(mobile);
     await host.screenshot({ path: testInfo.outputPath('results-desktop.png'), fullPage: true });
@@ -124,6 +130,17 @@ test('three browsers bid, restore a session, finish five rounds, and play again'
       await expect(page.getByRole('button', { name: '준비 완료', exact: true })).toBeEnabled();
     }
     await expect(host.getByRole('button', { name: /경매 시작/ })).toBeDisabled();
+    for (const page of pages)
+      await page.getByRole('button', { name: '준비 완료', exact: true }).click();
+    await expect(host.getByRole('button', { name: /경매 시작/ })).toBeEnabled();
+    await host.getByRole('button', { name: /경매 시작/ }).click();
+    for (const page of pages) await expect(page.locator('.auction-page')).toBeVisible();
+    await host.getByRole('button', { name: /5코인 입찰하기/ }).click();
+    for (const page of [guest, mobile]) {
+      await expect(page.locator('.current-bidder')).toContainText('오리방장');
+      await expect(page.locator('.highest-bid strong')).toHaveText('5');
+    }
+    for (const page of pages) await expect(page.getByRole('alert')).toHaveCount(0);
     expect(errors).toEqual([]);
   } finally {
     for (const page of pages) {

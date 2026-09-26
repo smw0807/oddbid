@@ -122,25 +122,125 @@ test('bids reject malformed amounts, overdrafts, underbids, self-raises and the 
     6,
     Number.MAX_SAFE_INTEGER + 1,
   ]) {
-    fails('INVALID_BID', () => engine.bid('p1', amount));
+    fails('INVALID_BID', () => engine.bid('p1', engine.auctionId, amount));
   }
-  fails('NOT_ENOUGH_COINS', () => engine.bid('p1', 105));
-  engine.bid('p1', 10);
-  fails('ALREADY_LEADING', () => engine.bid('p1', 15));
-  fails('BID_TOO_LOW', () => engine.bid('p2', 10));
-  engine.bid('p2', 15);
+  fails('NOT_ENOUGH_COINS', () => engine.bid('p1', engine.auctionId, 105));
+  engine.bid('p1', engine.auctionId, 10);
+  fails('ALREADY_LEADING', () => engine.bid('p1', engine.auctionId, 15));
+  fails('BID_TOO_LOW', () => engine.bid('p2', engine.auctionId, 10));
+  engine.bid('p2', engine.auctionId, 15);
   assert.equal(engine.players.find((player) => player.id === 'p2')!.coins, 100);
   moveTo(engine.endsAt);
-  fails('BIDDING_CLOSED', () => engine.bid('p3', 20));
+  fails('BIDDING_CLOSED', () => engine.bid('p3', engine.auctionId, 20));
   assert.equal(engine.highestBid, 15);
+});
+
+test('missing, malformed and unknown auction IDs reject bids without changing state', () => {
+  const { engine } = fixture();
+  engine.start('p1');
+  engine.bid('p1', engine.auctionId, 10);
+  const before = engine.snapshot();
+
+  for (const auctionId of [undefined, null, 0, 1, true, {}, [], '']) {
+    fails('INVALID_AUCTION_ID', () => engine.bid('p2', auctionId, 15));
+    assert.deepEqual(engine.snapshot(), before);
+  }
+  for (const auctionId of ['unknown-auction', ' ']) {
+    fails('STALE_AUCTION', () => engine.bid('p2', auctionId, 15));
+    assert.deepEqual(engine.snapshot(), before);
+  }
+
+  engine.bid('p2', engine.auctionId, 15);
+  assert.equal(engine.highestBid, 15);
+  assert.equal(engine.highestBidderId, 'p2');
+  assert.equal(engine.bidHistory.length, 2);
+});
+
+test('a previous round bid cannot affect the next auction while fresh bids still settle', () => {
+  const { engine, advance } = fixture();
+  engine.start('p1');
+  const previousAuctionId = engine.snapshot().auctionId;
+  assert.ok(previousAuctionId);
+  engine.bid('p1', previousAuctionId, 10);
+  advance();
+  assert.equal(engine.phase, 'reveal');
+  assert.equal(engine.snapshot().auctionId, previousAuctionId);
+  advance();
+
+  const before = engine.snapshot();
+  assert.equal(before.round, 2);
+  assert.ok(before.auctionId);
+  assert.notEqual(before.auctionId, previousAuctionId);
+  fails('STALE_AUCTION', () => engine.bid('p2', previousAuctionId, 15));
+  assert.deepEqual(engine.snapshot(), before);
+
+  engine.bid('p2', before.auctionId, 15);
+  advance();
+  assert.equal(engine.roundResults[1]!.winnerId, 'p2');
+  assert.equal(engine.roundResults[1]!.price, 15);
+  assert.equal(engine.players[0]!.coins, 90);
+  assert.equal(engine.players[1]!.coins, 85);
+});
+
+test('auction IDs stay unique across games and old game bids leave the restarted game unchanged', () => {
+  const { engine, advance } = fixture();
+  const auctionIds = new Set<string>();
+  assert.equal(engine.auctionId, null);
+  assert.equal(engine.snapshot().auctionId, null);
+  engine.start('p1');
+  for (let round = 1; round <= GAME.rounds; round += 1) {
+    assert.equal(engine.phase, 'auction');
+    assert.equal(engine.round, round);
+    const auctionId = engine.snapshot().auctionId;
+    assert.ok(auctionId);
+    assert.equal(auctionIds.has(auctionId), false);
+    auctionIds.add(auctionId);
+    advance();
+    assert.equal(engine.phase, 'reveal');
+    assert.equal(engine.snapshot().auctionId, auctionId);
+    advance();
+  }
+  assert.equal(auctionIds.size, GAME.rounds);
+  assert.equal(engine.phase, 'finished');
+  assert.equal(engine.auctionId, null);
+  assert.equal(engine.snapshot().auctionId, null);
+
+  engine.restart('p1');
+  assert.equal(engine.auctionId, null);
+  assert.equal(engine.snapshot().auctionId, null);
+  for (const player of engine.players) engine.setReady(player.id, true);
+  engine.start('p1');
+  const before = engine.snapshot();
+  for (const previousAuctionId of auctionIds) {
+    fails('STALE_AUCTION', () => engine.bid('p1', previousAuctionId, 5));
+    assert.deepEqual(engine.snapshot(), before);
+  }
+
+  for (let round = 1; round <= GAME.rounds; round += 1) {
+    assert.equal(engine.phase, 'auction');
+    assert.equal(engine.round, round);
+    const auctionId = engine.snapshot().auctionId;
+    assert.ok(auctionId);
+    assert.equal(auctionIds.has(auctionId), false);
+    auctionIds.add(auctionId);
+    engine.bid('p1', auctionId, 5);
+    advance();
+    assert.equal(engine.snapshot().auctionId, auctionId);
+    advance();
+  }
+  assert.equal(auctionIds.size, GAME.rounds * 2);
+  assert.equal(engine.phase, 'finished');
+  assert.equal(engine.snapshot().auctionId, null);
+  assert.equal(engine.players[0]!.coins, GAME.startingCoins - GAME.rounds * 5);
+  assert.equal(engine.players[0]!.items.length, GAME.rounds);
 });
 
 test('round settlement charges only the winning player exactly once', () => {
   const { engine, advance } = fixture();
   engine.start('p1');
   const itemId = engine.currentItem!.id;
-  engine.bid('p1', 10);
-  engine.bid('p2', 35);
+  engine.bid('p1', engine.auctionId, 10);
+  engine.bid('p2', engine.auctionId, 35);
   advance();
   assert.equal(engine.phase, 'reveal');
   assert.equal(engine.players[0]!.coins, 100);
@@ -148,7 +248,7 @@ test('round settlement charges only the winning player exactly once', () => {
   assert.deepEqual(engine.players[1]!.items, [{ itemId, price: 35 }]);
   assert.equal(engine.advance(), false);
   assert.equal(engine.players[1]!.coins, 65);
-  fails('BIDDING_CLOSED', () => engine.bid('p3', 40));
+  fails('BIDDING_CLOSED', () => engine.bid('p3', engine.auctionId, 40));
   advance();
   assert.equal(engine.round, 2);
   assert.equal(engine.highestBid, 0);
@@ -159,7 +259,7 @@ test('round settlement charges only the winning player exactly once', () => {
 test('five distinct lots from the 30-item catalog finish with transparent scoring and tie ranks', () => {
   const { engine, advance } = fixture();
   engine.start('p1');
-  engine.bid('p1', 25);
+  engine.bid('p1', engine.auctionId, 25);
   while (engine.phase !== 'finished') advance();
   assert.equal(engine.roundResults.length, GAME.rounds);
   const offeredIds = new Set(engine.roundResults.map((result) => result.itemId));
@@ -204,8 +304,8 @@ test('a collection mission awards its bonus only to the owner who wins the targe
     const mission = engine.self('p1').mission!;
     assert.ok(mission.targetItem);
     assert.equal(engine.currentItem!.id, mission.targetItem);
-    engine.bid('p1', 5);
-    if (!winsTarget) engine.bid('p2', 10);
+    engine.bid('p1', engine.auctionId, 5);
+    if (!winsTarget) engine.bid('p2', engine.auctionId, 10);
     while (engine.phase !== 'finished') advance();
     const result = engine.results.find((entry) => entry.playerId === 'p1')!;
     assert.equal(result.missionComplete, winsTarget);
@@ -227,7 +327,7 @@ test('a collection target may be absent and never earns a bonus for buying unrel
     engine.start('p1');
     const mission = engine.self('p1').mission!;
     while (engine.phase !== 'finished') {
-      if (engine.phase === 'auction') engine.bid('p1', 5);
+      if (engine.phase === 'auction') engine.bid('p1', engine.auctionId, 5);
       advance();
     }
     if (
@@ -258,7 +358,7 @@ test('restart resets coins, readiness, private missions, round and result histor
   const { engine, advance } = fixture();
   engine.start('p1');
   fails('GAME_NOT_FINISHED', () => engine.restart('p1'));
-  engine.bid('p1', 20);
+  engine.bid('p1', engine.auctionId, 20);
   while (engine.phase !== 'finished') advance();
   fails('HOST_ONLY', () => engine.restart('p2'));
   engine.removePlayer('p3');
@@ -296,9 +396,9 @@ test('disconnection preserves an active winner and mission, then transfers an ex
   const { engine, advance } = fixture();
   engine.start('p1');
   const mission = engine.self('p1').mission;
-  engine.bid('p1', 50);
+  engine.bid('p1', engine.auctionId, 50);
   engine.setConnected('p1', false);
-  fails('PLAYER_AWAY', () => engine.bid('p1', 55));
+  fails('PLAYER_AWAY', () => engine.bid('p1', engine.auctionId, 55));
   assert.equal(engine.hostId, 'p1');
   advance();
   assert.equal(engine.players[0]!.coins, 50);
@@ -320,7 +420,7 @@ test('lobby departure removes a player and passes host privileges', () => {
 test('public snapshots cannot mutate the engine or its inventory', () => {
   const { engine, advance } = fixture();
   engine.start('p1');
-  engine.bid('p1', 5);
+  engine.bid('p1', engine.auctionId, 5);
   advance();
   const snapshot = engine.snapshot();
   snapshot.players[0]!.coins = 999;

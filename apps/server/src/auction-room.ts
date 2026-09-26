@@ -55,7 +55,7 @@ export class AuctionRoom extends Room<{ state: object }> {
     );
     this.onMessage<unknown>('bid', (client, message) =>
       this.handle(client, () => {
-        this.engine.bid(client.sessionId, field(message, 'amount'));
+        this.engine.bid(client.sessionId, field(message, 'auctionId'), field(message, 'amount'));
         this.publish();
       }),
     );
@@ -205,7 +205,7 @@ export class AuctionRoom extends Room<{ state: object }> {
       const nextBid = this.engine.highestBid + GAME.bidStep;
       if (nextBid > Math.min(budget, bot.coins) || Math.random() < 0.2) continue;
       try {
-        this.engine.bid(bot.id, nextBid);
+        this.engine.bid(bot.id, this.engine.auctionId, nextBid);
         changed = true;
       } catch (error: unknown) {
         if (!(error instanceof GameRuleError)) throw error;

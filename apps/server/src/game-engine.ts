@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   GAME,
   ITEMS,
@@ -46,6 +47,7 @@ export class GameEngine {
   highestBid = 0;
   highestBidderId: string | null = null;
   currentItem: AuctionItem | null = null;
+  auctionId: string | null = null;
   readonly roundResults: RoundResult[] = [];
   readonly bidHistory: BidEvent[] = [];
   results: PlayerResult[] = [];
@@ -157,9 +159,19 @@ export class GameEngine {
     this.nextRound(this.now());
   }
 
-  bid(id: string, amount: unknown): void {
+  bid(id: string, auctionId: unknown, amount: unknown): void {
     if (this.phase !== 'auction' || this.now() >= this.endsAt)
       throw new GameRuleError('BIDDING_CLOSED', '이번 경매의 입찰이 마감됐어요.');
+    if (typeof auctionId !== 'string' || auctionId.length === 0)
+      throw new GameRuleError(
+        'INVALID_AUCTION_ID',
+        '경매 정보가 올바르지 않아요. 새로고침해 주세요.',
+      );
+    if (auctionId !== this.auctionId)
+      throw new GameRuleError(
+        'STALE_AUCTION',
+        '입찰한 경매가 바뀌었어요. 현재 물건과 입찰가를 다시 확인해 주세요.',
+      );
     const player = this.player(id);
     if (!player.connected) throw new GameRuleError('PLAYER_AWAY', '다시 연결한 후 입찰해 주세요.');
     if (
@@ -233,6 +245,7 @@ export class GameEngine {
     this.round = 0;
     this.endsAt = 0;
     this.currentItem = null;
+    this.auctionId = null;
     this.highestBid = 0;
     this.highestBidderId = null;
     this.missions.clear();
@@ -261,6 +274,7 @@ export class GameEngine {
       round: this.round,
       totalRounds: GAME.rounds,
       currentItem: this.currentItem ? { ...this.currentItem } : null,
+      auctionId: this.auctionId,
       highestBid: this.highestBid,
       highestBidderId: this.highestBidderId,
       endsAt: this.endsAt,
@@ -288,6 +302,7 @@ export class GameEngine {
   private nextRound(now: number): void {
     this.round += 1;
     this.currentItem = this.lots[this.round - 1]!;
+    this.auctionId = randomUUID();
     this.phase = 'auction';
     this.endsAt = now + this.roundMs;
     this.highestBid = 0;
@@ -297,6 +312,7 @@ export class GameEngine {
 
   private finish(): void {
     this.phase = 'finished';
+    this.auctionId = null;
     this.endsAt = 0;
     this.results = this.players
       .map((player) => {

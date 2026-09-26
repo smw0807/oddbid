@@ -338,6 +338,10 @@ export interface BidEvent {
   amount: number;
   at: number;
 }
+export interface BidRequest {
+  auctionId: string;
+  amount: number;
+}
 export interface RoundResult {
   round: number;
   itemId: ItemId;
@@ -365,6 +369,8 @@ export interface GameSnapshot {
   round: number;
   totalRounds: number;
   currentItem: AuctionItem | null;
+  /** Server-issued ID for this auction and its reveal; null in the lobby and final results. */
+  auctionId: string | null;
   highestBid: number;
   highestBidderId: string | null;
   endsAt: number;
@@ -398,8 +404,9 @@ export function missionCompleted(
   if (mission.id === 'thrifty') return player.items.length >= 1 && player.coins >= 60;
   return false;
 }
-/** Client -> server: sync, ready {ready:boolean}, start, bid {amount:number}, restart, reaction {emoji:string}.
+/** Client -> server: sync, ready {ready:boolean}, start, bid BidRequest, restart, reaction {emoji:string}.
  * Server -> client: snapshot GameSnapshot, self SelfState, error GameError, reaction ReactionEvent.
+ * Bids must use the displayed auctionId; clients and server must be updated together.
  * Clients create('auction',{name,practice}) / joinById(code,{name}), then send('sync') after registering handlers.
  * A private mission must NEVER be included in snapshots before phase=finished.
  */

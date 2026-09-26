@@ -42,6 +42,22 @@ function self(peer: Peer): SelfState {
   return value;
 }
 
+function bidPayload(peer: Peer, amount: unknown): { auctionId: string; amount: unknown } {
+  const auctionId = snapshot(peer).auctionId;
+  assert.equal(typeof auctionId, 'string');
+  assert.ok(auctionId);
+  return { auctionId, amount };
+}
+
+function biddingState(state: GameSnapshot) {
+  return {
+    highestBid: state.highestBid,
+    highestBidderId: state.highestBidderId,
+    bidHistory: state.bidHistory,
+    players: state.players.map(({ id, coins, items }) => ({ id, coins, items })),
+  };
+}
+
 async function observe(t: TestContext, room: Room<unknown>): Promise<Peer> {
   const peer: Peer = { room, snapshots: [], selfStates: [], errors: [] };
   room.onMessage('snapshot', (value: GameSnapshot) => peer.snapshots.push(value));
@@ -75,12 +91,13 @@ async function expectError(
   type: string,
   payload: unknown,
   code: string,
-): Promise<void> {
+): Promise<GameError> {
   const received = peer.errors.length;
   peer.room.send(type, payload);
   const error = await waitFor(() => peer.errors[received], `${type} rejection ${code}`);
   assert.equal(error.code, code);
   assert.ok(error.message.length > 0);
+  return error;
 }
 
 async function readyAndStart(peers: Peer[]): Promise<void> {
@@ -169,6 +186,7 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     );
     assert.match(host.room.roomId, /^[A-Z0-9]{6}$/u);
     assert.equal(snapshot(host).hostId, host.room.sessionId);
+    assert.equal(snapshot(host).auctionId, null);
     assert.equal(self(host).mission, null);
     await expectError(host, 'start', undefined, 'NOT_ENOUGH_PLAYERS');
 
@@ -193,24 +211,33 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     assertPrivateMissions(peers);
   });
 
-  test('invalid bids never change the auction; five rounds settle and restart clears game state', async (t) => {
+  test('invalid and stale bids leave the auction unchanged across rounds and games', async (t) => {
     const peers = await makeParty(t);
     const [host, second, third] = peers as [Peer, Peer, Peer];
     await readyAndStart(peers);
+    const firstAuctionId = bidPayload(host, 5).auctionId;
+    assert.ok(peers.every((peer) => snapshot(peer).auctionId === firstAuctionId));
+
+    const beforeInvalidIds = biddingState(snapshot(host));
+    await expectError(host, 'bid', { amount: 5 }, 'INVALID_AUCTION_ID');
+    for (const auctionId of ['', null, 1, true, {}, []]) {
+      await expectError(host, 'bid', { auctionId, amount: 5 }, 'INVALID_AUCTION_ID');
+    }
+    assert.deepEqual(biddingState(await sync(host)), beforeInvalidIds);
 
     for (const amount of [0, -5, 3, 5.5, '10', null]) {
-      await expectError(host, 'bid', { amount }, 'INVALID_BID');
+      await expectError(host, 'bid', bidPayload(host, amount), 'INVALID_BID');
     }
-    await expectError(host, 'bid', { amount: 105 }, 'NOT_ENOUGH_COINS');
+    await expectError(host, 'bid', bidPayload(host, 105), 'NOT_ENOUGH_COINS');
     assert.equal((await sync(host)).highestBid, 0);
-    host.room.send('bid', { amount: 20 });
+    host.room.send('bid', bidPayload(host, 20));
     await waitFor(
       () => (snapshot(host).highestBid === 20 ? true : undefined),
       'first accepted bid',
     );
-    await expectError(host, 'bid', { amount: 25 }, 'ALREADY_LEADING');
-    await expectError(second, 'bid', { amount: 20 }, 'BID_TOO_LOW');
-    await expectError(second, 'bid', { amount: 105 }, 'NOT_ENOUGH_COINS');
+    await expectError(host, 'bid', bidPayload(host, 25), 'ALREADY_LEADING');
+    await expectError(second, 'bid', bidPayload(second, 20), 'BID_TOO_LOW');
+    await expectError(second, 'bid', bidPayload(second, 105), 'NOT_ENOUGH_COINS');
     const unchanged = await sync(host);
     assert.equal(unchanged.highestBid, 20);
     assert.equal(unchanged.highestBidderId, host.room.sessionId);
@@ -220,7 +247,7 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
       'coins are charged at settlement, not at bid time',
     );
 
-    second.room.send('bid', { amount: 25 });
+    second.room.send('bid', bidPayload(second, 25));
     await waitFor(
       () => (snapshot(host).highestBidderId === second.room.sessionId ? true : undefined),
       'a competing player outbids the leader',
@@ -230,12 +257,14 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
       'first round reveal',
     );
     assert.equal(snapshot(host).roundResults[0]?.winnerId, second.room.sessionId);
+    assert.equal(snapshot(host).auctionId, firstAuctionId);
     assert.equal(
       snapshot(host).players.find((player) => player.id === second.room.sessionId)?.coins,
       75,
     );
-    await expectError(third, 'bid', { amount: 30 }, 'BIDDING_CLOSED');
+    await expectError(third, 'bid', bidPayload(third, 30), 'BIDDING_CLOSED');
 
+    const auctionIds = new Set([firstAuctionId]);
     for (let round = 2; round <= GAME.rounds; round += 1) {
       await waitFor(
         () =>
@@ -244,11 +273,26 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
       );
       assert.equal(snapshot(host).highestBid, 0);
       assert.equal(snapshot(host).highestBidderId, null);
-      host.room.send('bid', { amount: 5 });
+      const currentAuctionId = bidPayload(host, 5).auctionId;
+      assert.ok(!auctionIds.has(currentAuctionId), 'every round receives a new auction ID');
+      auctionIds.add(currentAuctionId);
+      host.room.send('bid', bidPayload(host, 5));
       await waitFor(
         () => (snapshot(host).highestBidderId === host.room.sessionId ? true : undefined),
         `accepted bid in round ${round}`,
       );
+      if (round === 2) {
+        const beforeStaleBid = biddingState(snapshot(host));
+        const error = await expectError(
+          second,
+          'bid',
+          { auctionId: firstAuctionId, amount: 30 },
+          'STALE_AUCTION',
+        );
+        assert.match(error.message, /현재.*물건.*입찰가.*확인/u);
+        assert.deepEqual(biddingState(await sync(host)), beforeStaleBid);
+        assert.equal(snapshot(host).auctionId, currentAuctionId);
+      }
     }
 
     await waitFor(
@@ -264,6 +308,7 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     );
     assert.equal(finished.results.length, 3);
     assert.equal(finished.endsAt, 0);
+    assert.equal(finished.auctionId, null);
     assert.equal(finished.players.find((player) => player.id === host.room.sessionId)?.coins, 80);
     assert.equal(finished.players.find((player) => player.id === second.room.sessionId)?.coins, 75);
     assert.equal(finished.players.find((player) => player.id === third.room.sessionId)?.coins, 100);
@@ -310,6 +355,7 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
       const lobby = snapshot(peer);
       assert.equal(lobby.round, 0);
       assert.equal(lobby.currentItem, null);
+      assert.equal(lobby.auctionId, null);
       assert.equal(lobby.highestBid, 0);
       assert.equal(lobby.highestBidderId, null);
       assert.equal(lobby.endsAt, 0);
@@ -331,6 +377,22 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     );
     assert.equal(snapshot(newcomer).phase, 'lobby');
     assert.equal(snapshot(newcomer).players.length, 4);
+
+    await readyAndStart([...peers, newcomer]);
+    const restartedAuctionId = bidPayload(host, 5).auctionId;
+    assert.ok(!auctionIds.has(restartedAuctionId), 'a rematch does not reuse any auction ID');
+    const beforePreviousGameBid = biddingState(snapshot(host));
+    await expectError(host, 'bid', { auctionId: firstAuctionId, amount: 20 }, 'STALE_AUCTION');
+    assert.deepEqual(biddingState(await sync(host)), beforePreviousGameBid);
+    assert.equal(snapshot(host).auctionId, restartedAuctionId);
+    host.room.send('bid', bidPayload(host, 20));
+    await waitFor(
+      () => (snapshot(host).highestBid === 20 ? true : undefined),
+      'a current auction ID is accepted after rejecting a previous game bid',
+    );
+    assert.equal(snapshot(host).highestBidderId, host.room.sessionId);
+    assert.equal(snapshot(host).bidHistory.length, 1);
+    assert.ok(snapshot(host).players.every((player) => player.coins === GAME.startingCoins));
   });
 
   test('a consenting host departure hands ownership to a remaining player', async (t) => {
@@ -356,7 +418,7 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     const peers = await makeParty(t);
     const [host, second] = peers as [Peer, Peer, Peer];
     await readyAndStart(peers);
-    host.room.send('bid', { amount: 15 });
+    host.room.send('bid', bidPayload(host, 15));
     await waitFor(
       () => (snapshot(host).highestBidderId === host.room.sessionId ? true : undefined),
       'host bid before connection loss',
@@ -369,7 +431,7 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     assert.ok(purchased);
     assert.equal(purchased.coins, 85);
     assert.equal(purchased.items.length, 1);
-    host.room.send('bid', { amount: 5 });
+    host.room.send('bid', bidPayload(host, 5));
     await waitFor(
       () => (snapshot(host).highestBidderId === host.room.sessionId ? true : undefined),
       'a live bid alongside the settled purchase',
@@ -398,7 +460,7 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     assert.deepEqual(player.items, purchased.items);
     assert.equal(snapshot(restored).highestBidderId, playerId);
     assert.equal(snapshot(restored).highestBid, 5);
-    await expectError(restored, 'bid', { amount: 10 }, 'ALREADY_LEADING');
+    await expectError(restored, 'bid', bidPayload(restored, 10), 'ALREADY_LEADING');
     assertPrivateMissions([...peers, restored]);
   });
 
@@ -411,7 +473,7 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     );
     assert.notEqual(other.room.roomId, host.room.roomId);
     await readyAndStart(peers);
-    host.room.send('bid', { amount: 35 });
+    host.room.send('bid', bidPayload(host, 35));
     await waitFor(
       () => (snapshot(host).highestBid === 35 ? true : undefined),
       'bid in the first room',
