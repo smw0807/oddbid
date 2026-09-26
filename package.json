@@ -1,0 +1,35 @@
+{
+  "name": "oddbid",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "엉뚱한 물건에 입찰하고 비밀 미션을 달성하는 실시간 멀티플레이 경매 심리전 게임",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c green,yellow \"npm run dev -w @oddbid/server\" \"npm run dev -w @oddbid/web\"",
+    "build": "npm run build -w @oddbid/web && npm run build -w @oddbid/server",
+    "start": "npm run start -w @oddbid/server",
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc -p tsconfig.tests.json",
+    "test": "node --import tsx --test apps/server/src/*.test.ts tests/*.test.ts",
+    "test:e2e": "npm run build && playwright test",
+    "test:dev": "playwright test -c playwright.dev.config.ts",
+    "check": "npm run typecheck && npm test && npm run build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "@types/node": "^24.0.0",
+    "concurrently": "^9.2.1",
+    "esbuild": "^0.25.12",
+    "prettier": "^3.7.4",
+    "tsx": "^4.21.0",
+    "typescript": "~5.9.3"
+  }
+}
