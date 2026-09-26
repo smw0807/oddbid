@@ -1,19 +1,27 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap');
 
 :root {
-  font-family: 'Noto Sans KR', sans-serif;
-  color: #e9e5da;
-  background: #1c1c1a;
+  font-family: var(--font-ui);
+  color: #eeeade;
+  background: #242824;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --ink: #1c1c1a;
-  --paper: #e9e5da;
-  --accent: #ee5038;
-  --muted: #aaa89e;
-  --line: #4b4b44;
-  --panel: #252522;
-  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --ink: #242824;
+  --paper: #eeeade;
+  --accent: #e89a7c;
+  --muted: #afb5a8;
+  --line: #454c43;
+  --panel: #2d322c;
+  --font-ui: 'Nunito', 'Noto Sans KR', sans-serif;
+  --font-display: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+  --radius-control: 12px;
+  --radius-panel: 22px;
+  --control-line: #747c6c;
+  --art-ink: #383a35;
+  --art-paper: #eeeade;
+  --art-accent: #e89a7c;
+  font-variant-numeric: tabular-nums;
 }
 
 * {
@@ -69,16 +77,16 @@ input {
   width: 100%;
   color: var(--paper);
   background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 0;
+  border: 1px solid var(--control-line);
+  border-radius: var(--radius-control);
   padding: 14px 16px;
 }
 input::placeholder {
-  color: #94948b;
+  color: #afb5a8;
   opacity: 1;
 }
 input:focus {
-  border-color: var(--paper);
+  border-color: var(--accent);
 }
 h1,
 h2,
@@ -91,14 +99,17 @@ h2,
 h3 {
   word-break: keep-all;
   overflow-wrap: anywhere;
+  font-weight: 500;
 }
 h1 {
-  font-weight: 900;
-  letter-spacing: -0.065em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-synthesis: weight;
+  letter-spacing: -0.035em;
 }
 h2,
 h3 {
-  letter-spacing: -0.04em;
+  letter-spacing: -0.025em;
 }
 svg {
   display: block;
@@ -129,11 +140,9 @@ small {
   align-items: center;
   flex-shrink: 0;
   gap: 10px;
-  font:
-    900 34px/1 'Arial Black',
-    sans-serif;
-  letter-spacing: -2.5px;
-  text-transform: uppercase;
+  font: 700 34px/1 var(--font-ui);
+  text-transform: none;
+  letter-spacing: -1.5px;
 }
 .wordmark span {
   margin-left: -10px;
@@ -144,6 +153,7 @@ small {
   height: 29px;
   color: var(--accent);
   margin-right: 4px;
+  stroke-width: 2.2;
 }
 .header-right {
   display: flex;
@@ -173,7 +183,8 @@ small {
   border: 1px solid var(--line);
   width: 20px;
   height: 20px;
-  font: 11px var(--mono);
+  font: 11px var(--font-ui);
+  border-radius: 50%;
 }
 .exit-button {
   color: var(--muted);
@@ -182,7 +193,7 @@ small {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  font: 600 15px var(--mono);
+  font: 600 15px var(--font-ui);
   letter-spacing: 0.12em;
 }
 .room-badge i,
@@ -190,6 +201,7 @@ small {
   width: 6px;
   height: 6px;
   background: var(--accent);
+  border-radius: 50%;
 }
 .room-badge i.disconnected {
   background: var(--muted);
@@ -207,6 +219,7 @@ small {
   background: var(--panel);
   font-size: 13px;
   line-height: 1.7;
+  border-radius: 16px;
 }
 .error-banner strong {
   color: var(--accent);
@@ -222,6 +235,7 @@ small {
   height: 7px;
   background: var(--accent);
   flex-shrink: 0;
+  border-radius: 50%;
 }
 .button {
   min-height: 52px;
@@ -232,14 +246,14 @@ small {
   gap: 20px;
   border: 1px solid var(--line);
   font-size: 14px;
-  font-weight: 700;
   line-height: 1.5;
-  border-radius: 0;
+  border-radius: var(--radius-control);
+  font-weight: 600;
 }
 .button:hover:not(:disabled) {
-  background: var(--paper);
-  border-color: var(--paper);
-  color: var(--ink);
+  background: #394236;
+  border-color: #687460;
+  color: var(--paper);
 }
 .button.primary {
   background: var(--accent);
@@ -247,8 +261,9 @@ small {
   border-color: var(--accent);
 }
 .button.primary:hover:not(:disabled) {
-  background: #ff7259;
-  border-color: #ff7259;
+  background: #f1af95;
+  border-color: #f1af95;
+  color: var(--ink);
 }
 .button.yellow {
   background: var(--paper);
@@ -270,12 +285,12 @@ small {
   line-height: 1;
 }
 .eyebrow {
-  font: 500 11px/1.7 var(--mono);
+  font: 500 11px/1.7 var(--font-ui);
   letter-spacing: 0.14em;
   color: var(--muted);
 }
 
-/* An auction notice: type, rules, and a single printed lot plate. */
+/* Quiet type, rounded surfaces, and one playful featured lot. */
 .hero {
   display: grid;
   grid-template-columns: 1.08fr 1fr;
@@ -292,21 +307,22 @@ small {
   align-items: center;
   gap: 10px;
   margin-bottom: 25px;
-  color: var(--paper);
   font-family: inherit;
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.09em;
+  color: var(--muted);
+  letter-spacing: 0.02em;
 }
 .hero-copy > .eyebrow::before {
   content: '';
   width: 7px;
   height: 7px;
   background: var(--accent);
+  border-radius: 50%;
 }
 .hero h1 {
-  font-size: clamp(45px, 5.1vw, 73px);
-  line-height: 1.22;
+  font-size: clamp(44px, 5.05vw, 70px);
+  line-height: 1.36;
 }
 .hero h1 .hero-title-line {
   display: block;
@@ -315,17 +331,18 @@ small {
   color: var(--accent);
 }
 .hero-description {
-  color: #bcbab0;
+  color: #b9c0b1;
   font-size: 14px;
-  line-height: 1.9;
   margin-top: 24px;
   word-break: keep-all;
+  line-height: 2;
+  font-weight: 400;
 }
 .game-facts {
   display: flex;
   gap: 0;
   margin-top: 24px;
-  font: 500 12px/1.4 var(--mono);
+  font: 500 12px/1.4 var(--font-ui);
 }
 .game-facts span {
   padding: 0 17px;
@@ -386,11 +403,12 @@ small {
 .join-form input {
   flex: 1;
   width: 100px;
-  font: 12px var(--mono);
+  font: 12px var(--font-ui);
   padding: 8px 0;
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--line);
+  border-radius: 0;
 }
 .join-form button {
   padding: 8px 0 8px 8px;
@@ -409,27 +427,32 @@ small {
   position: relative;
   background: var(--paper);
   color: var(--ink);
-  border: 1px solid var(--paper);
   padding: 20px 24px 0;
+  border: none;
+  border-radius: 26px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.07);
 }
 .card-topline {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  font: 600 10px/1.5 var(--mono);
+  font: 600 10px/1.5 var(--font-ui);
   letter-spacing: 0.06em;
 }
 .hero-auction-card .card-topline {
-  border-bottom: 1px solid #aaa69a;
+  border-bottom: 1px solid #cbc8bb;
   padding-bottom: 14px;
 }
 .small-pill {
   font-family: inherit;
   font-size: 10px;
-  border: 1px solid currentColor;
-  padding: 3px 7px;
   white-space: nowrap;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(56 58 53 / 0.07);
+  padding: 5px 10px;
 }
 .hero-art-wrap {
   position: relative;
@@ -451,49 +474,52 @@ small {
 }
 .lot-index {
   position: absolute;
-  left: -3px;
-  top: -8px;
-  font:
-    900 158px/1 'Arial Black',
-    sans-serif;
-  letter-spacing: -0.09em;
-  color: #d0ccc1;
+  font: 500 142px/1 var(--font-ui);
+  letter-spacing: -0.035em;
+  color: #dfdbce;
   user-select: none;
+  top: 1px;
+  left: 5px;
 }
 .lot-stamp {
   position: absolute;
   z-index: 2;
   right: 0;
   bottom: 25px;
-  border: 2px solid var(--accent);
-  color: #bc3927;
-  padding: 8px 10px;
+  color: #79503b;
   font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  transform: rotate(-8deg);
+  border: none;
+  border-radius: 999px;
+  background: #e6c8b4;
+  font-weight: 500;
+  letter-spacing: 0;
+  padding: 9px 14px;
+  transform: rotate(-3deg);
 }
 .hero-item-info {
   padding: 5px 0 20px;
 }
 .category-label {
-  color: #5d5d54;
+  color: #62685c;
   font-size: 10px;
   letter-spacing: 0.08em;
 }
 .hero-item-info h2 {
   margin-top: 8px;
-  font-size: 29px;
-  font-weight: 900;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-synthesis: weight;
+  font-size: 30px;
+  line-height: 1.5;
 }
 .hero-item-info p {
   font-size: 12px;
   line-height: 1.7;
-  color: #5c5c52;
+  color: #62685c;
   margin-top: 5px;
 }
 .example-bid {
-  border-top: 1px solid #aaa69a;
+  border-top: 1px solid #cbc8bb;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -502,13 +528,13 @@ small {
 }
 .example-bid > div > span {
   display: block;
-  color: #5c5c52;
+  color: #62685c;
   font-size: 10px;
   margin-bottom: 6px;
 }
 .example-bid strong {
-  font: 700 35px/1 var(--mono);
-  letter-spacing: -0.07em;
+  font: 700 35px/1 var(--font-ui);
+  letter-spacing: -0.035em;
 }
 .example-bid strong small {
   font:
@@ -524,18 +550,18 @@ small {
 }
 .catalog-mission {
   margin: 0 -24px;
-  padding: 14px 24px;
-  background: var(--ink);
-  color: var(--paper);
   font-size: 11px;
   line-height: 1.8;
-  border-top: 1px solid #77756b;
+  background: #e3ddcc;
+  color: var(--ink);
+  border-top: none;
+  padding: 17px 24px;
 }
 .catalog-mission span {
-  color: var(--accent);
   margin-right: 10px;
-  font-family: var(--mono);
   font-size: 10px;
+  color: #79503b;
+  font-family: var(--font-ui);
 }
 .catalog-footnote {
   font-size: 10px;
@@ -559,19 +585,22 @@ small {
   flex-shrink: 0;
   width: 42px;
   height: 46px;
-  border: 1px solid currentColor;
-  background: var(--paper);
   color: var(--ink);
-  font: 700 22px/1 var(--mono);
+  font: 700 22px/1 var(--font-ui);
+  border: none;
+  border-radius: 15px;
+  background: #d3d9c5;
+  font-weight: 600;
 }
 .avatar-number {
   font: inherit;
-  letter-spacing: -0.08em;
+  letter-spacing: 0;
 }
 .avatar.small {
   width: 25px;
   height: 29px;
   font-size: 13px;
+  border-radius: 9px;
 }
 .how-it-works {
   padding: 26px 0 46px;
@@ -582,7 +611,7 @@ small {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  font: 10px/1.6 var(--mono);
+  font: 10px/1.6 var(--font-ui);
   letter-spacing: 0.08em;
   color: var(--muted);
 }
@@ -600,22 +629,30 @@ small {
   padding: 0 28px 0 44px;
 }
 .feature-grid article + article {
-  border-left: 1px solid var(--line);
   padding-left: 65px;
+  border-left: 0;
 }
 .feature-number {
   position: absolute;
-  top: 3px;
   left: 0;
-  color: var(--accent);
-  font: 600 13px var(--mono);
+  font: 600 13px var(--font-ui);
+  color: #b8c4aa;
+  background: #343d32;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 500;
+  top: 0;
 }
 .feature-grid article + article .feature-number {
   left: 24px;
 }
 .feature-grid h3 {
+  font-weight: 500;
   font-size: 17px;
-  font-weight: 700;
+  line-height: 1.8;
 }
 .feature-grid p {
   margin-top: 12px;
@@ -636,18 +673,16 @@ small {
 }
 .footer-wordmark {
   color: var(--paper);
-  font:
-    900 16px 'Arial Black',
-    sans-serif;
+  font: 700 19px var(--font-ui);
   letter-spacing: -1px;
-  text-transform: uppercase;
+  text-transform: none;
 }
 .site-footer > span:last-child {
-  font: 10px var(--mono);
+  font: 10px var(--font-ui);
   letter-spacing: 0.08em;
 }
 
-/* The same auction notice becomes the guest ledger and bidding desk. */
+/* Shared surfaces keep the lobby, bidding desk, and results familiar. */
 .game-main {
   padding: 42px 0 56px;
 }
@@ -672,6 +707,8 @@ small {
 .paper-panel {
   border: 1px solid var(--line);
   background: var(--panel);
+  border-color: #3d453a;
+  border-radius: var(--radius-panel);
 }
 .lobby-layout {
   display: grid;
@@ -694,7 +731,7 @@ small {
 }
 .panel-heading > span {
   color: var(--muted);
-  font: 11px var(--mono);
+  font: 11px var(--font-ui);
   white-space: nowrap;
 }
 .guest-list {
@@ -707,6 +744,7 @@ small {
   padding: 14px 0;
   border-top: 1px solid var(--line);
   min-height: 75px;
+  border-color: #424a3e;
 }
 .guest-name {
   min-width: 0;
@@ -728,6 +766,7 @@ small {
   font-weight: 400;
   vertical-align: middle;
   white-space: nowrap;
+  border-radius: 5px;
 }
 .guest-name > span {
   display: block;
@@ -741,9 +780,12 @@ small {
   white-space: nowrap;
 }
 .ready-label.ready {
-  color: var(--paper);
-  border-bottom: 2px solid var(--accent);
   padding-bottom: 3px;
+  border-bottom: 0;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #3a4734;
+  color: #d4dfc6;
 }
 .empty-avatar {
   display: grid;
@@ -753,10 +795,11 @@ small {
   flex-shrink: 0;
   border: 1px dashed var(--line);
   color: var(--muted);
-  font: 20px var(--mono);
+  font: 20px var(--font-ui);
+  border-radius: 15px;
 }
 .empty-guest > span:last-child {
-  color: #929288;
+  color: #a2aa99;
   font-size: 11px;
 }
 .lobby-controls {
@@ -780,15 +823,20 @@ small {
   padding: 28px;
   background: var(--paper);
   color: var(--ink);
-  border-top: 7px solid var(--accent);
+  border-top: 0;
+  border-radius: var(--radius-panel);
 }
 .invitation-ticket > .eyebrow {
-  color: #616157;
+  color: #62685c;
   font-size: 10px;
 }
 .invitation-ticket h2 {
   font-size: 23px;
   margin-top: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-synthesis: weight;
+  line-height: 1.5;
 }
 .invitation-ticket .item-art {
   width: 200px;
@@ -797,13 +845,13 @@ small {
 }
 .ticket-code-label {
   padding-top: 20px;
-  border-top: 1px solid #aaa69a;
+  border-top: 1px solid #cbc8bb;
   font-size: 10px;
 }
 .ticket-code {
   display: block;
   margin: 8px 0 20px;
-  font: 700 clamp(28px, 3.8vw, 47px)/1.2 var(--mono);
+  font: 700 clamp(28px, 3.8vw, 47px)/1.2 var(--font-ui);
   letter-spacing: 0.08em;
 }
 .invitation-ticket > .button {
@@ -813,7 +861,7 @@ small {
   margin-top: 22px;
   font-size: 11px;
   line-height: 1.9;
-  color: #616157;
+  color: #62685c;
 }
 .copy-fallback {
   display: block;
@@ -825,7 +873,7 @@ small {
   font-size: 12px;
 }
 .practice-info {
-  border-top: 1px solid #aaa69a;
+  border-top: 1px solid #cbc8bb;
   padding-top: 20px;
 }
 .practice-info > strong {
@@ -834,7 +882,7 @@ small {
 .practice-info > p {
   font-size: 12px;
   line-height: 1.8;
-  color: #616157;
+  color: #62685c;
   margin-top: 10px;
 }
 .auction-heading {
@@ -857,11 +905,11 @@ small {
 }
 .round-counter > span {
   color: var(--muted);
-  font: 10px var(--mono);
+  font: 10px var(--font-ui);
 }
 .round-counter strong {
-  font: 700 35px var(--mono);
-  letter-spacing: -0.06em;
+  font: 700 35px var(--font-ui);
+  letter-spacing: -0.025em;
 }
 .round-counter small {
   color: var(--muted);
@@ -871,8 +919,11 @@ small {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   margin: 26px 0;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border: 0;
+  padding: 5px;
+  border-radius: 16px;
+  background: var(--panel);
+  gap: 5px;
 }
 .round-track > div {
   display: flex;
@@ -883,12 +934,13 @@ small {
   color: var(--muted);
   font-size: 11px;
   min-width: 0;
+  border-radius: 11px;
 }
 .round-track > div + div {
-  border-left: 1px solid var(--line);
+  border-left: none;
 }
 .round-track > div > span:first-child {
-  font: 12px var(--mono);
+  font: 12px var(--font-ui);
 }
 .round-track > div > span:last-child {
   overflow: hidden;
@@ -896,17 +948,18 @@ small {
   white-space: nowrap;
 }
 .round-track .current {
-  color: var(--paper);
-  background: var(--panel);
+  background: #414a38;
+  color: #e8eddf;
 }
 .round-track .current::after {
   content: '';
   position: absolute;
-  left: 0;
-  bottom: -1px;
+  left: 30%;
+  bottom: 5px;
   height: 3px;
-  width: 100%;
-  background: var(--accent);
+  width: 40%;
+  border-radius: 999px;
+  background: #b8c8a2;
 }
 .round-track .completed {
   color: var(--paper);
@@ -921,11 +974,12 @@ small {
   background: var(--paper);
   color: var(--ink);
   border-color: var(--paper);
+  overflow: hidden;
 }
 .live-item-card > .card-topline {
   margin: 20px 24px 0;
   padding-bottom: 14px;
-  border-bottom: 1px solid #aaa69a;
+  border-bottom: 1px solid #cbc8bb;
 }
 .live-art-wrap {
   position: relative;
@@ -946,14 +1000,15 @@ small {
   bottom: 18px;
   right: 24px;
   padding: 10px 12px;
-  background: var(--paper);
-  border: 1px solid #aaa69a;
   font-size: 10px;
+  border: 0;
+  border-radius: 14px;
+  background: #dfdfcf;
 }
 .value-ticket strong {
   display: block;
   margin-top: 5px;
-  font: 600 28px var(--mono);
+  font: 600 28px var(--font-ui);
 }
 .value-ticket small {
   font:
@@ -966,17 +1021,20 @@ small {
 }
 .live-item-info h2 {
   font-size: 29px;
-  font-weight: 900;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-synthesis: weight;
+  line-height: 1.45;
 }
 .live-item-info p {
-  color: #616157;
+  color: #62685c;
   font-size: 12px;
   line-height: 1.7;
   margin-top: 6px;
 }
 .auction-timer {
   padding: 14px 24px 20px;
-  border-top: 1px solid #aaa69a;
+  border-top: 1px solid #cbc8bb;
 }
 .auction-timer > div:first-child {
   display: flex;
@@ -987,7 +1045,7 @@ small {
   font-size: 11px;
 }
 .auction-timer strong {
-  font: 600 27px var(--mono);
+  font: 600 27px var(--font-ui);
 }
 .auction-timer small {
   font:
@@ -999,17 +1057,20 @@ small {
   height: 4px;
   margin-top: 11px;
   background: #c4c1b6;
+  border-radius: 999px;
+  overflow: hidden;
 }
 .timer-track > div {
   height: 100%;
-  background: var(--ink);
   transition: width 200ms linear;
+  border-radius: 999px;
+  background: #647458;
 }
 .auction-timer.urgent strong {
   color: #b63422;
 }
 .auction-timer.urgent .timer-track > div {
-  background: var(--accent);
+  background: #b96343;
 }
 .auction-timer.revealing .timer-track > div {
   background: #77776a;
@@ -1034,8 +1095,9 @@ small {
   margin: 20px 0 8px;
 }
 .highest-bid strong {
-  font: 700 76px/1 var(--mono);
-  letter-spacing: -0.09em;
+  font: 700 76px/1 var(--font-ui);
+  letter-spacing: -0.035em;
+  font-weight: 600;
 }
 .highest-bid > span {
   color: var(--muted);
@@ -1070,12 +1132,16 @@ small {
   align-items: center;
   border: 1px solid var(--line);
   min-height: 48px;
+  border-color: var(--control-line);
+  border-radius: var(--radius-control);
 }
 .bid-stepper button {
   align-self: stretch;
   width: 52px;
   flex-shrink: 0;
   font-size: 24px;
+  border-radius: 10px;
+  font-weight: 400;
 }
 .bid-stepper button:hover:not(:disabled) {
   background: var(--line);
@@ -1083,7 +1149,7 @@ small {
 .bid-stepper output {
   flex: 1;
   text-align: center;
-  font: 600 23px var(--mono);
+  font: 600 23px var(--font-ui);
 }
 .bid-stepper small {
   font:
@@ -1106,6 +1172,8 @@ small {
 .wallet-panel {
   display: flex;
   border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #2b3029;
 }
 .wallet-panel > div {
   flex: 1;
@@ -1123,7 +1191,7 @@ small {
   color: var(--muted);
 }
 .wallet-panel strong {
-  font: 600 23px var(--mono);
+  font: 600 23px var(--font-ui);
   white-space: nowrap;
 }
 .wallet-panel small {
@@ -1134,7 +1202,8 @@ small {
   color: var(--muted);
 }
 .mission-panel {
-  border: 1px dashed #69695e;
+  border: 1px solid #596252;
+  border-radius: 16px;
 }
 .mission-panel > button {
   width: 100%;
@@ -1145,6 +1214,7 @@ small {
   gap: 12px;
   font-size: 11px;
   text-align: left;
+  border-radius: 16px;
 }
 .mission-panel > button > span:first-child {
   display: flex;
@@ -1153,7 +1223,7 @@ small {
 }
 .mission-panel > button > span:first-child > span {
   color: var(--accent);
-  font: 9px var(--mono);
+  font: 9px var(--font-ui);
 }
 .mission-panel > button > span:last-child {
   color: var(--muted);
@@ -1163,6 +1233,7 @@ small {
 .mission-panel.open {
   border-style: solid;
   border-color: var(--accent);
+  background: #30362c;
 }
 .mission-content {
   padding: 4px 20px 20px;
@@ -1198,14 +1269,14 @@ small {
   justify-content: center;
 }
 .reveal-symbol {
-  border: 3px solid var(--accent);
-  color: var(--accent);
-  padding: 6px 12px;
-  font:
-    900 34px/1 'Arial Black',
-    sans-serif;
-  transform: rotate(-5deg);
   margin: 0 0 24px;
+  border: 0;
+  border-radius: 999px;
+  background: #414937;
+  color: #d7e3c8;
+  font: 600 25px/1 var(--font-ui);
+  padding: 12px 18px;
+  transform: none;
 }
 .reveal-panel .eyebrow {
   font-size: 10px;
@@ -1213,6 +1284,9 @@ small {
 .reveal-panel h2 {
   font-size: 28px;
   margin-top: 14px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-synthesis: weight;
 }
 .reveal-panel p {
   font-size: 12px;
@@ -1255,6 +1329,8 @@ small {
   height: 34px;
   font-size: 18px;
   border: 1px solid var(--line);
+  border-radius: 10px;
+  border-color: #596252;
 }
 .reaction-controls button:hover:not(:disabled) {
   background: var(--line);
@@ -1262,8 +1338,9 @@ small {
 .player-strip {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--line);
-  border-left: 1px solid var(--line);
+  gap: 10px;
+  border-top: 0;
+  border-left: 0;
 }
 .table-player {
   position: relative;
@@ -1272,19 +1349,21 @@ small {
   gap: 12px;
   min-width: 0;
   padding: 16px;
-  border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  border: 1px solid var(--line);
+  border-radius: 16px;
 }
 .table-player.leader {
-  background: var(--panel);
+  background: #38422f;
 }
 .table-player.is-me {
-  box-shadow: inset 3px 0 var(--accent);
+  box-shadow: inset 0 0 0 1px #8da47a;
+  border-color: #8da47a;
 }
 .table-player .avatar {
   width: 34px;
   height: 38px;
   font-size: 18px;
+  border-radius: 12px;
 }
 .table-player > div:nth-child(2) {
   min-width: 0;
@@ -1317,6 +1396,7 @@ small {
   width: 6px;
   height: 6px;
   background: var(--accent);
+  border-radius: 50%;
 }
 .history-panel {
   margin-top: 28px;
@@ -1356,7 +1436,7 @@ small {
   color: var(--accent);
 }
 .history-panel li strong {
-  font: 600 14px var(--mono);
+  font: 600 14px var(--font-ui);
   white-space: nowrap;
 }
 .history-panel li small {
@@ -1377,9 +1457,7 @@ small {
 .results-index {
   display: block;
   color: var(--accent);
-  font:
-    900 48px/1 'Arial Black',
-    sans-serif;
+  font: 600 48px/1 var(--font-ui);
   margin: 14px 0;
 }
 .my-result-ticket {
@@ -1388,7 +1466,8 @@ small {
   gap: 28px;
   margin-bottom: 24px;
   padding: 20px 24px;
-  background: var(--accent);
+  border-radius: 18px;
+  background: #d2dac2;
   color: var(--ink);
 }
 .my-result-ticket > span {
@@ -1401,7 +1480,7 @@ small {
 .my-result-ticket strong {
   font-size: 29px;
   white-space: nowrap;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.025em;
 }
 .my-result-ticket small {
   font-size: 13px;
@@ -1428,7 +1507,7 @@ small {
 }
 .result-rank {
   color: var(--muted);
-  font: 500 23px var(--mono);
+  font: 500 23px var(--font-ui);
 }
 .result-row.winner .result-rank {
   color: var(--accent);
@@ -1444,8 +1523,8 @@ small {
 }
 .result-total {
   margin-left: auto;
-  font: 700 35px var(--mono);
-  letter-spacing: -0.06em;
+  font: 700 35px var(--font-ui);
+  letter-spacing: -0.025em;
   white-space: nowrap;
 }
 .result-total small {
@@ -1473,14 +1552,14 @@ small {
 }
 .score-equation b {
   color: var(--paper);
-  font: 500 16px var(--mono);
+  font: 500 16px var(--font-ui);
 }
 .score-equation > i {
-  font: 12px var(--mono);
+  font: 12px var(--font-ui);
   color: var(--muted);
 }
 .score-equation > strong {
-  font: 600 16px var(--mono);
+  font: 600 16px var(--font-ui);
   margin-left: auto;
   white-space: nowrap;
 }
@@ -1496,10 +1575,12 @@ small {
   border: 1px solid var(--line);
   font-size: 10px;
   white-space: nowrap;
+  border-radius: 999px;
 }
 .revealed-mission > span.success {
-  color: var(--paper);
-  border-color: var(--accent);
+  background: #3a4734;
+  border-color: #3a4734;
+  color: #d4dfc6;
 }
 .revealed-mission p {
   color: var(--muted);
@@ -1522,11 +1603,12 @@ small {
   font-size: 10px;
   padding: 5px 8px;
   border: 1px solid var(--line);
+  border-radius: 8px;
 }
 .won-items small {
   color: var(--muted);
   margin-left: 8px;
-  font-family: var(--mono);
+  font-family: var(--font-ui);
 }
 .won-items > .no-items {
   border: 0;
@@ -1550,12 +1632,13 @@ small {
   max-height: calc(100% - 40px);
   padding: 0;
   color: var(--paper);
-  border: 1px solid var(--line);
-  border-top: 5px solid var(--accent);
   background: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 20px 70px rgb(0 0 0 / 0.25);
 }
 .rules-dialog::backdrop {
-  background: rgb(0 0 0 / 0.78);
+  background: rgb(15 20 15 / 0.65);
 }
 .rules-content {
   position: relative;
@@ -1574,7 +1657,9 @@ small {
 }
 .rules-content > h2 {
   font-size: 29px;
-  font-weight: 900;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-synthesis: weight;
 }
 .rules-intro {
   font-size: 12px;
@@ -1595,7 +1680,7 @@ small {
 }
 .rules-list li > span {
   color: var(--accent);
-  font: 600 12px var(--mono);
+  font: 600 12px var(--font-ui);
   padding-top: 3px;
 }
 .rules-list h3 {
@@ -1611,8 +1696,9 @@ small {
   display: flex;
   gap: 24px;
   padding: 18px;
-  background: var(--panel);
-  border-left: 2px solid var(--accent);
+  border-left: none;
+  border-radius: 14px;
+  background: #343d2f;
 }
 .rules-example > strong {
   font-size: 12px;
@@ -1914,8 +2000,8 @@ small {
   }
   .hero h1 {
     font-size: clamp(43px, 10.7vw, 67px);
-    line-height: 1.2;
-    letter-spacing: -0.07em;
+    line-height: 1.36;
+    letter-spacing: -0.035em;
   }
   .hero-copy > .eyebrow {
     margin-bottom: 20px;
@@ -2029,8 +2115,8 @@ small {
   .feature-number,
   .feature-grid article + article .feature-number {
     left: 0;
-    top: 26px;
-    font-size: 12px;
+    top: 25px;
+    font-size: 11px;
   }
   .feature-grid h3 {
     font-size: 16px;
@@ -2160,6 +2246,7 @@ small {
     font-size: 8px;
   }
   .round-counter strong {
+    white-space: nowrap;
     font-size: 23px;
   }
   .round-counter small {
@@ -2480,10 +2567,13 @@ small {
     column-gap: 10px;
   }
   .hero h1 {
-    font-size: 41px;
+    font-size: 38px;
   }
-  .hero-description br {
-    display: none;
+  .entry-actions .button {
+    gap: 8px;
+    padding: 12px;
+    font-size: 11px;
+    white-space: nowrap;
   }
   .hero-art-wrap {
     height: 225px;

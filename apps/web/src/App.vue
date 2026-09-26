@@ -170,7 +170,7 @@ function roundName(round: number): string {
           <path
             d="m9 9 5-5 13 13-5 5L9 9Zm8 9L6 29M4 27l4 4M20 28h10"
             stroke="currentColor"
-            stroke-width="3"
+            stroke-width="2.3"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
@@ -181,7 +181,7 @@ function roundName(round: number): string {
         <span v-if="snapshot" class="room-badge"
           ><i :class="{ disconnected: !connected }"></i>{{ snapshot.roomId }}</span
         >
-        <span v-else class="header-tagline">입찰은 신중하게. 속마음은 비밀로.</span>
+        <span v-else class="header-tagline">친구들과 가볍게, 눈치 한 판.</span>
         <button class="text-button rules-button" @click="rules?.showModal()">
           <span class="question-mark">?</span>게임 방법
         </button>
@@ -211,13 +211,13 @@ function roundName(round: number): string {
     <main v-if="!snapshot" class="landing">
       <section class="hero">
         <div class="hero-copy">
-          <div class="eyebrow">비공개 경매 · 누구나 입장 가능</div>
+          <div class="eyebrow">우리끼리 즐기는 작은 경매</div>
           <h1>
-            <span class="hero-title-line">쓸모는 없고.</span>
+            <span class="hero-title-line">쓸모는 없고,</span>
             <span class="hero-title-line">눈치는 필요하고.</span>
           </h1>
           <p class="hero-description">
-            고무오리에 전 재산을 건 친구.<br />그럴 만한 비밀이 있습니다.
+            고무오리에 전 재산을 건 친구.<br />친구에게는 나름의 비밀이 있거든요.
           </p>
           <div class="game-facts">
             <span>3–6명</span><span>100코인</span><span>5번의 경매</span>
@@ -277,7 +277,7 @@ function roundName(round: number): string {
             <div class="hero-art-wrap">
               <span class="lot-index" aria-hidden="true">001</span>
               <ItemArt item="duck" />
-              <span class="lot-stamp">감정 불가</span>
+              <span class="lot-stamp">얼마면 될까요?</span>
             </div>
             <div class="hero-item-info">
               <span class="category-label">출품 상태 · 사용감 조금</span>
@@ -306,19 +306,19 @@ function roundName(round: number): string {
         <div class="feature-grid">
           <article>
             <span class="feature-number">01</span>
-            <h3>입장.</h3>
+            <h3>함께 모이고</h3>
             <p>링크 하나로 친구를 초대하세요.<br />회원가입 없이, 혼자라면 봇 2명과 연습.</p>
           </article>
           <article>
             <span class="feature-number">02</span>
-            <h3>입찰.</h3>
+            <h3>눈치를 보고</h3>
             <p>
               지갑에는 100코인, 속으로는 비밀 미션.<br />각 물건에 25초. 사고 싶다면 손을 드세요.
             </p>
           </article>
           <article>
             <span class="feature-number">03</span>
-            <h3>공개.</h3>
+            <h3>속마음 공개</h3>
             <p>
               5번의 경매가 끝나면 미션을 공개합니다.<br />남은 코인, 물건 감정가, 미션 점수로 결산.
             </p>
@@ -330,7 +330,7 @@ function roundName(round: number): string {
     <main v-else-if="snapshot.phase === 'lobby'" class="lobby game-main">
       <div class="page-heading">
         <div class="eyebrow">입찰자 명단</div>
-        <h1>입찰자를 기다립니다.</h1>
+        <h1>친구들을 기다려요.</h1>
         <p>
           {{
             snapshot.practice
@@ -404,7 +404,7 @@ function roundName(round: number): string {
           <div class="eyebrow">
             {{ snapshot.practice ? '연습 경매 안내' : '경매장 초대장' }}
           </div>
-          <h2>{{ snapshot.practice ? '입찰 전, 한 번 연습.' : '함께 입찰할 사람에게.' }}</h2>
+          <h2>{{ snapshot.practice ? '가볍게 한 판 해봐요.' : '같이 한 판 어때요?' }}</h2>
           <ItemArt item="duck" compact /><template v-if="!snapshot.practice"
             ><div class="ticket-code-label">우리 경매장 초대 코드</div>
             <strong class="ticket-code">{{ snapshot.roomId }}</strong
@@ -435,7 +435,9 @@ function roundName(round: number): string {
           <div class="eyebrow">
             {{ snapshot.practice ? '연습 경매 진행 중' : '경매 진행 중' }}
           </div>
-          <h1>{{ snapshot.phase === 'reveal' ? '이번 출품, 마감.' : '지금 출품된 물건.' }}</h1>
+          <h1>
+            {{ snapshot.phase === 'reveal' ? '이번 경매가 끝났어요' : '이번엔 이 물건이에요' }}
+          </h1>
         </div>
         <div class="round-counter">
           <span>ROUND</span
@@ -670,8 +672,8 @@ function roundName(round: number): string {
     <main v-else class="results-page game-main">
       <div class="page-heading">
         <div class="eyebrow">경매 종료 · 최종 결산</div>
-        <h1>속마음까지, 공개.</h1>
-        <p>모든 입찰이 끝났습니다. 비밀 미션과 최종 점수를 확인하세요.</p>
+        <h1>이제 속마음을 볼까요?</h1>
+        <p>그 물건이 갖고 싶었던 이유, 이제 함께 확인해요.</p>
       </div>
       <div v-if="ownResult" class="my-result-ticket">
         <span>오늘 나의 성적</span
@@ -770,7 +772,7 @@ function roundName(round: number): string {
         <button class="dialog-close" aria-label="게임 방법 닫기" autofocus @click="rules?.close()">
           ×
         </button>
-        <div class="eyebrow">참가 규정</div>
+        <div class="eyebrow">이렇게 함께 놀아요</div>
         <h2 id="rules-title">눈치만 챙겨오세요.</h2>
         <p class="rules-intro">3~6명이 함께하는, 약 3분짜리 수상한 경매.</p>
         <ol class="rules-list">
