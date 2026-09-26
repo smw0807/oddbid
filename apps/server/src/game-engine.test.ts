@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { GAME, ITEMS, missionCompleted } from '@oddbid/shared';
+import { GAME, ITEMS, MISSIONS, getItem, missionCompleted } from '@oddbid/shared';
 import { GameEngine, GameRuleError, validateName } from './game-engine.js';
 
-function fixture(practice = false) {
+function fixture(practice = false, random: () => number = () => 0.25) {
   let now = 10_000;
   const engine = new GameEngine({
     roomId: 'ABC123',
     practice,
     now: () => now,
-    random: () => 0.25,
+    random,
     roundMs: 1000,
     revealMs: 100,
   });
@@ -33,6 +33,31 @@ function fails(code: string, action: () => void) {
   assert.throws(action, (error: unknown) => error instanceof GameRuleError && error.code === code);
 }
 
+function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
+}
+
+test('the catalog has 30 unique items and a collection mission for every item', () => {
+  const itemIds = ITEMS.map((item) => item.id);
+  assert.equal(ITEMS.length, 30);
+  assert.equal(new Set(itemIds).size, 30);
+  assert.ok(
+    ITEMS.every((item) => item.name.trim() && Number.isSafeInteger(item.value) && item.value > 0),
+  );
+  const collectionMissions = MISSIONS.filter((mission) => mission.targetItem);
+  assert.equal(collectionMissions.length, 30);
+  assert.deepEqual(
+    new Set(collectionMissions.map((mission) => mission.targetItem)),
+    new Set(itemIds),
+  );
+  assert.equal(MISSIONS.length, 32);
+  assert.equal(new Set(MISSIONS.map((mission) => mission.id)).size, MISSIONS.length);
+});
+
 test('only ready groups of 3–6 can be started by their host', () => {
   const engine = new GameEngine({ roomId: 'ABC123' });
   engine.addPlayer('p1', '오리');
@@ -50,17 +75,32 @@ test('only ready groups of 3–6 can be started by their host', () => {
 });
 
 test('missions are unique and private until the final result', () => {
-  const { engine } = fixture();
+  const { engine, advance } = fixture();
+  for (let index = 4; index <= GAME.maxPlayers; index += 1) {
+    engine.addPlayer(`p${index}`, `참가자${index}`);
+    engine.setReady(`p${index}`, true);
+  }
   assert.equal(engine.self('p1').mission, null);
   engine.start('p1');
   const missions = engine.players.map((player) => engine.self(player.id).mission!);
-  assert.equal(new Set(missions.map((mission) => mission.id)).size, 3);
+  assert.equal(new Set(missions.map((mission) => mission.id)).size, GAME.maxPlayers);
   assert.equal(engine.snapshot().results.length, 0);
   for (const mission of missions)
     assert.equal(JSON.stringify(engine.snapshot()).includes(mission.id), false);
   const self = engine.self('p1');
   self.mission!.title = 'tampered';
   assert.notEqual(engine.self('p1').mission!.title, 'tampered');
+  while (engine.phase !== 'finished') {
+    const snapshot = engine.snapshot();
+    assert.deepEqual(snapshot.results, []);
+    for (const mission of missions)
+      assert.equal(JSON.stringify(snapshot).includes(mission.id), false);
+    advance();
+  }
+  assert.deepEqual(
+    new Set(engine.snapshot().results.map((result) => result.mission.id)),
+    new Set(missions.map((mission) => mission.id)),
+  );
 });
 
 test('bids reject malformed amounts, overdrafts, underbids, self-raises and the exact deadline', () => {
@@ -116,16 +156,15 @@ test('round settlement charges only the winning player exactly once', () => {
   assert.deepEqual(engine.bidHistory, []);
 });
 
-test('five distinct lots finish with transparent scoring and tie ranks', () => {
+test('five distinct lots from the 30-item catalog finish with transparent scoring and tie ranks', () => {
   const { engine, advance } = fixture();
   engine.start('p1');
   engine.bid('p1', 25);
   while (engine.phase !== 'finished') advance();
   assert.equal(engine.roundResults.length, GAME.rounds);
-  assert.deepEqual(
-    new Set(engine.roundResults.map((result) => result.itemId)),
-    new Set(ITEMS.map((item) => item.id)),
-  );
+  const offeredIds = new Set(engine.roundResults.map((result) => result.itemId));
+  assert.equal(offeredIds.size, GAME.rounds);
+  assert.ok(engine.roundResults.every((result) => ITEMS.some((item) => item.id === result.itemId)));
   assert.equal(engine.roundResults.filter((result) => result.winnerId === null).length, 4);
   const results = engine.snapshot().results;
   assert.equal(results.length, 3);
@@ -136,6 +175,83 @@ test('five distinct lots finish with transparent scoring and tie ranks', () => {
   }
   const idlePlayers = results.filter((result) => result.playerId !== 'p1');
   assert.equal(idlePlayers[0]!.rank, idlePlayers[1]!.rank);
+});
+
+test('different random seeds offer different five-item selections without changing the catalog', () => {
+  const catalogBefore = ITEMS.map((item) => item.id);
+  const selections = [1, 2, 3].map((seed) => {
+    const { engine, advance } = fixture(false, seededRandom(seed));
+    engine.start('p1');
+    while (engine.phase !== 'finished') advance();
+    const selection = engine.roundResults.map((result) => result.itemId);
+    assert.equal(selection.length, GAME.rounds);
+    assert.equal(new Set(selection).size, GAME.rounds);
+    return [...selection].sort();
+  });
+  assert.notDeepEqual(selections[0], selections[1]);
+  assert.notDeepEqual(selections[1], selections[2]);
+  assert.deepEqual(
+    ITEMS.map((item) => item.id),
+    catalogBefore,
+  );
+});
+
+test('a collection mission awards its bonus only to the owner who wins the target', () => {
+  // A near-one random source preserves catalog order, so the first target is offered.
+  for (const winsTarget of [true, false]) {
+    const { engine, advance } = fixture(false, () => 0.999999);
+    engine.start('p1');
+    const mission = engine.self('p1').mission!;
+    assert.ok(mission.targetItem);
+    assert.equal(engine.currentItem!.id, mission.targetItem);
+    engine.bid('p1', 5);
+    if (!winsTarget) engine.bid('p2', 10);
+    while (engine.phase !== 'finished') advance();
+    const result = engine.results.find((entry) => entry.playerId === 'p1')!;
+    assert.equal(result.missionComplete, winsTarget);
+    assert.equal(result.missionScore, winsTarget ? mission.bonus : 0);
+    assert.equal(
+      result.total,
+      winsTarget
+        ? GAME.startingCoins - 5 + getItem(mission.targetItem).value + mission.bonus
+        : GAME.startingCoins,
+    );
+    assert.equal(engine.roundResults[0]!.winnerId, winsTarget ? 'p1' : 'p2');
+  }
+});
+
+test('a collection target may be absent and never earns a bonus for buying unrelated items', () => {
+  let absentTargetsChecked = 0;
+  for (let seed = 1; seed <= 20; seed += 1) {
+    const { engine, advance } = fixture(false, seededRandom(seed));
+    engine.start('p1');
+    const mission = engine.self('p1').mission!;
+    while (engine.phase !== 'finished') {
+      if (engine.phase === 'auction') engine.bid('p1', 5);
+      advance();
+    }
+    if (
+      !mission.targetItem ||
+      engine.roundResults.some((result) => result.itemId === mission.targetItem)
+    )
+      continue;
+    absentTargetsChecked += 1;
+    const player = engine.players.find((entry) => entry.id === 'p1')!;
+    const result = engine.results.find((entry) => entry.playerId === 'p1')!;
+    assert.equal(player.items.length, GAME.rounds);
+    assert.equal(player.coins, GAME.startingCoins - GAME.rounds * 5);
+    assert.equal(result.mission.id, mission.id);
+    assert.equal(result.missionComplete, false);
+    assert.equal(result.missionScore, 0);
+    assert.equal(
+      result.total,
+      player.coins + player.items.reduce((sum, item) => sum + getItem(item.itemId).value, 0),
+    );
+  }
+  assert.ok(
+    absentTargetsChecked > 0,
+    'some assigned collection targets must remain outside the five lots',
+  );
 });
 
 test('restart resets coins, readiness, private missions, round and result history', () => {

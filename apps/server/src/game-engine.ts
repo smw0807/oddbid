@@ -150,7 +150,7 @@ export class GameEngine {
       player.items = [];
       this.missions.set(player.id, { ...shuffledMissions[index]! });
     });
-    this.lots = shuffle(ITEMS, this.random);
+    this.lots = shuffle(ITEMS, this.random).slice(0, GAME.rounds);
     this.roundResults.length = 0;
     this.results = [];
     this.round = 0;

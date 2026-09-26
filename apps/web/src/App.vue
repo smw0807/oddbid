@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { GAME, REACTIONS, getItem } from '@oddbid/shared';
+import { GAME, ITEMS, REACTIONS, getItem } from '@oddbid/shared';
 import ItemArt from './components/ItemArt.vue';
 import PlayerAvatar from './components/PlayerAvatar.vue';
 import { useGame } from './composables/useGame';
@@ -26,6 +26,7 @@ const nickname = ref(savedName);
 const inviteCode = ref(new URLSearchParams(location.search).get('room')?.toUpperCase() || '');
 const rules = ref<HTMLDialogElement | null>(null);
 const missionVisible = ref(false);
+const collectionMissionNotice = '수집 미션의 목표 물건이 이번 게임에 나오지 않을 수도 있어요.';
 const copied = ref(false);
 const copyFallback = ref('');
 const selectedBid = ref<number>(GAME.bidStep);
@@ -313,7 +314,8 @@ function roundName(round: number): string {
             <span class="feature-number">02</span>
             <h3>눈치를 보고</h3>
             <p>
-              지갑에는 100코인, 속으로는 비밀 미션.<br />각 물건에 25초. 사고 싶다면 손을 드세요.
+              {{ ITEMS.length }}종 중 무작위 {{ GAME.rounds }}종이 찾아와요.<br />지갑에는 100코인,
+              속으로는 비밀 미션.
             </p>
           </article>
           <article>
@@ -421,7 +423,11 @@ function roundName(round: number): string {
             <strong>나 + 봇 친구 2명</strong>
             <p>연습 방에서는 봇과 함께해요.<br />친구들과 하려면 새 경매장을 열어주세요.</p>
           </div>
-          <p>참가비 없음 · 시작 자금 100코인<br />5번의 경매 종료 후 최종 결산</p>
+          <p>
+            참가비 없음 · 시작 자금 100코인<br />{{ ITEMS.length }}종 중 무작위 {{ GAME.rounds }}종
+            · 물건당 한 번씩 경매
+          </p>
+          <p class="collection-notice">{{ collectionMissionNotice }}</p>
         </aside>
       </div>
     </main>
@@ -594,7 +600,10 @@ function roundName(round: number): string {
               <template v-if="self?.mission"
                 ><h3>{{ self.mission.title }}</h3>
                 <p>{{ self.mission.description }}</p>
-                <strong>성공하면 +{{ self.mission.bonus }}점</strong></template
+                <strong>성공하면 +{{ self.mission.bonus }}점</strong>
+                <p v-if="self.mission.targetItem" class="collection-notice">
+                  {{ collectionMissionNotice }}
+                </p></template
               >
               <p v-else>비밀 미션을 받아오는 중이에요.</p>
               <small>본인만 열람 가능 · 화면 공유에 주의하세요.</small>
@@ -788,10 +797,11 @@ function roundName(round: number): string {
           <li>
             <span>02</span>
             <div>
-              <h3>5번의 경매, 한 번의 선택</h3>
+              <h3>{{ ITEMS.length }}종 중 {{ GAME.rounds }}종과의 만남</h3>
               <p>
-                물건마다 25초, 5코인 단위로 입찰해요. 마감 순간 최고 입찰자가 물건을 가져가고 코인을
-                지불해요. 입찰은 취소할 수 없어요.
+                매 게임마다 서로 다른 {{ GAME.rounds }}종을 무작위로 골라요. 물건마다 25초, 5코인
+                단위로 입찰해요. 마감 순간 최고 입찰자가 물건을 가져가고 코인을 지불해요. 입찰은
+                취소할 수 없어요.
               </p>
             </div>
           </li>
@@ -803,6 +813,7 @@ function roundName(round: number): string {
                 물건을 모으거나 코인을 아끼는 등 각자 다른 목표가 있어요. 성공하면 미션에 적힌
                 보너스 점수를 받아요.
               </p>
+              <p class="collection-notice">{{ collectionMissionNotice }}</p>
             </div>
           </li>
           <li>

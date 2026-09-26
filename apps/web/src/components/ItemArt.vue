@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ItemId } from '@oddbid/shared';
+import AdditionalItemArt from './AdditionalItemArt.vue';
 defineProps<{ item: ItemId; compact?: boolean }>();
 const keys = Array.from({ length: 30 }, (_, i) => ({
   x: 80 + (i % 10) * 20,
@@ -12,6 +13,7 @@ const keys = Array.from({ length: 30 }, (_, i) => ({
     viewBox="0 0 360 280"
     class="item-art"
     :class="{ compact }"
+    :data-item-art="item"
     fill="none"
     stroke="var(--art-ink, #383a35)"
     stroke-width="2.8"
@@ -21,7 +23,7 @@ const keys = Array.from({ length: 30 }, (_, i) => ({
   >
     <path d="M94 244c47 3 124 3 173-1" stroke-width="2" opacity=".2" />
 
-    <g v-if="item === 'duck'">
+    <g v-if="item === 'duck'" data-art-id="duck">
       <path
         d="M78 139c12 7 22 8 32-3l19-19c20-14 51-15 75-8 38 10 66 34 62 67-4 34-45 51-92 44-45-5-76-27-83-58-3-11-11-14-13-23Z"
         fill="var(--art-paper, #eeeade)"
@@ -49,7 +51,7 @@ const keys = Array.from({ length: 30 }, (_, i) => ({
       <circle cx="231" cy="91" r="3" fill="var(--art-ink, #383a35)" stroke="none" />
     </g>
 
-    <g v-else-if="item === 'keyboard'" transform="rotate(-3 180 145)">
+    <g v-else-if="item === 'keyboard'" data-art-id="keyboard" transform="rotate(-3 180 145)">
       <path d="M138 85V58c0-17 26-20 27-2 0 15 24 14 24-3V36" />
       <path
         d="M71 89h209c7 0 12 5 13 12l12 102c1 8-4 14-12 14H59c-8 0-13-6-12-14l12-102c1-7 5-12 12-12Z"
@@ -95,7 +97,7 @@ const keys = Array.from({ length: 30 }, (_, i) => ({
       </text>
     </g>
 
-    <g v-else-if="item === 'banana'">
+    <g v-else-if="item === 'banana'" data-art-id="banana">
       <path
         d="M87 181c51 11 116-20 154-97 2-4 5-6 8-3l11 12c3 3 3 6 2 10-16 77-77 125-136 119-22-2-39-16-44-32-2-6 0-10 5-9Z"
         fill="var(--art-accent, #e89a7c)"
@@ -136,7 +138,7 @@ const keys = Array.from({ length: 30 }, (_, i) => ({
       </g>
     </g>
 
-    <g v-else-if="item === 'sock'">
+    <g v-else-if="item === 'sock'" data-art-id="sock">
       <path
         d="m164 61 57 9c6 1 9 6 8 12l-19 108c-4 28-21 44-48 44l-48-5c-23-3-35-18-26-33 6-11 17-15 32-13l23 3 17-119c0-4 1-6 4-6Z"
         fill="var(--art-accent, #e89a7c)"
@@ -156,7 +158,7 @@ const keys = Array.from({ length: 30 }, (_, i) => ({
       <path d="m166 145-3 18m14-16-2 12" stroke-width="1.6" opacity=".4" />
     </g>
 
-    <g v-else>
+    <g v-else-if="item === 'globe'" data-art-id="globe">
       <circle cx="179" cy="125" r="84" fill="var(--art-paper, #eeeade)" />
       <circle cx="217" cy="90" r="18" fill="var(--art-accent, #e89a7c)" stroke="none" />
       <path
@@ -190,5 +192,6 @@ const keys = Array.from({ length: 30 }, (_, i) => ({
         <circle cx="154" cy="78" r="1.6" />
       </g>
     </g>
+    <AdditionalItemArt v-else :item="item" />
   </svg>
 </template>

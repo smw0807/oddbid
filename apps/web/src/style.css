@@ -863,6 +863,21 @@ small {
   line-height: 1.9;
   color: #62685c;
 }
+.collection-notice {
+  padding: 11px 13px;
+  border-radius: var(--radius-control);
+  background: rgb(232 154 124 / 8%);
+  border: 1px solid rgb(232 154 124 / 22%);
+  overflow-wrap: anywhere;
+}
+.invitation-ticket > .collection-notice {
+  margin-top: 14px;
+  color: #665144;
+  background: #e5dfd0;
+  border-color: #cfc2af;
+  text-align: left;
+  font-size: 12px;
+}
 .copy-fallback {
   display: block;
   font-size: 11px;
@@ -1251,6 +1266,10 @@ small {
   display: block;
   font-size: 12px;
   margin-top: 12px;
+  color: var(--accent);
+}
+.mission-content > .collection-notice {
+  margin-top: 14px;
   color: var(--accent);
 }
 .mission-content > small {
@@ -1691,6 +1710,9 @@ small {
   font-size: 11px;
   line-height: 1.9;
   margin-top: 8px;
+}
+.rules-list .collection-notice {
+  color: var(--accent);
 }
 .rules-example {
   display: flex;
