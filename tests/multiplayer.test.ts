@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test, type TestContext } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
+import { matchMaker } from '@colyseus/core';
 import { Client, type Room } from '@colyseus/sdk';
 import {
   GAME,
   ITEMS,
   MISSIONS,
+  REACTIONS,
   type GameError,
   type GameSnapshot,
+  type ReactionEvent,
   type SelfState,
 } from '@oddbid/shared';
 import { createGameServer } from '../apps/server/src/app.js';
@@ -17,6 +20,7 @@ interface Peer {
   snapshots: GameSnapshot[];
   selfStates: SelfState[];
   errors: GameError[];
+  reactions: ReactionEvent[];
 }
 
 /** Poll a condition with a deadline; test correctness never depends on sleeping a fixed duration. */
@@ -59,11 +63,11 @@ function biddingState(state: GameSnapshot) {
 }
 
 async function observe(t: TestContext, room: Room<unknown>): Promise<Peer> {
-  const peer: Peer = { room, snapshots: [], selfStates: [], errors: [] };
+  const peer: Peer = { room, snapshots: [], selfStates: [], errors: [], reactions: [] };
   room.onMessage('snapshot', (value: GameSnapshot) => peer.snapshots.push(value));
   room.onMessage('self', (value: SelfState) => peer.selfStates.push(value));
   room.onMessage('error', (value: GameError) => peer.errors.push(value));
-  room.onMessage('reaction', () => undefined);
+  room.onMessage('reaction', (value: ReactionEvent) => peer.reactions.push(value));
   t.after(async () => {
     room.reconnection.enabled = false;
     if (room.connection.isOpen) await room.leave();
@@ -76,9 +80,9 @@ async function observe(t: TestContext, room: Room<unknown>): Promise<Peer> {
   return peer;
 }
 
-async function sync(peer: Peer): Promise<GameSnapshot> {
+async function sync(peer: Peer, payload?: unknown): Promise<GameSnapshot> {
   const received = peer.snapshots.length;
-  peer.room.send('sync');
+  peer.room.send('sync', payload);
   await waitFor(
     () => (peer.snapshots.length > received ? true : undefined),
     'a fresh sync response',
@@ -151,7 +155,13 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
   let endpoint: string;
 
   before(async () => {
-    game = createGameServer({ host: '127.0.0.1', port: 0, roundMs: 800, revealMs: 80 });
+    game = createGameServer({
+      host: '127.0.0.1',
+      port: 0,
+      roundMs: 800,
+      revealMs: 80,
+      reconnectionSeconds: 2,
+    });
     endpoint = `ws://127.0.0.1:${await game.listen()}`;
   });
 
@@ -159,10 +169,10 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     await game?.shutdown();
   });
 
-  async function makeParty(t: TestContext): Promise<Peer[]> {
+  async function makeParty(t: TestContext, options: Record<string, unknown> = {}): Promise<Peer[]> {
     const host = await observe(
       t,
-      await new Client(endpoint).create('auction', { name: '오리방장' }),
+      await new Client(endpoint).create('auction', { name: '오리방장', ...options }),
     );
     const second = await observe(
       t,
@@ -414,6 +424,188 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     assert.equal(snapshot(third).hostId, second.room.sessionId);
   });
 
+  test('a dropped lobby host can return during grace, then expiry rejects its token and transfers ownership', async (t) => {
+    const peers = await makeParty(t, { reconnectionSeconds: 0 });
+    const [host, second, third] = peers as [Peer, Peer, Peer];
+    host.room.send('ready', { ready: true });
+    await waitFor(
+      () =>
+        snapshot(second).players.find((player) => player.id === host.room.sessionId)?.ready
+          ? true
+          : undefined,
+      'host ready before connection loss',
+    );
+    const token = host.room.reconnectionToken;
+    host.room.reconnection.enabled = false;
+    host.room.connection.close();
+    await waitFor(
+      () =>
+        snapshot(second).players.find((player) => player.id === host.room.sessionId)?.connected ===
+        false
+          ? true
+          : undefined,
+      'host retained during the server-controlled grace period',
+    );
+    assert.equal(snapshot(second).hostId, host.room.sessionId);
+    assert.equal(
+      snapshot(second).players.find((player) => player.id === host.room.sessionId)?.ready,
+      false,
+    );
+    const restored = await observe(t, await new Client(endpoint).reconnect(token));
+    assert.equal(restored.room.sessionId, host.room.sessionId);
+    assert.equal(snapshot(restored).hostId, host.room.sessionId);
+    assert.equal(snapshot(restored).players.length, 3);
+
+    const expiredToken = restored.room.reconnectionToken;
+    restored.room.reconnection.enabled = false;
+    restored.room.connection.close();
+    await waitFor(
+      () =>
+        snapshot(second).players.length === 2 && snapshot(second).hostId === second.room.sessionId
+          ? true
+          : undefined,
+      'expired host seat removed and ownership transferred',
+    );
+    await assert.rejects(new Client(endpoint).reconnect(expiredToken));
+    const replacement = await observe(
+      t,
+      await new Client(endpoint).joinById(second.room.roomId, { name: '새방문자' }),
+    );
+    await readyAndStart([second, third, replacement]);
+    assertPrivateMissions([...peers, restored, replacement]);
+  });
+
+  test('all players leaving releases active rooms after consent or reconnection expiry', async (t) => {
+    for (const abrupt of [false, true]) {
+      const peers = await makeParty(t);
+      await readyAndStart(peers);
+      const roomId = peers[0]!.room.roomId;
+      const tokens = peers.map((peer) => peer.room.reconnectionToken);
+      for (const peer of peers) {
+        peer.room.reconnection.enabled = false;
+        if (abrupt) peer.room.connection.close();
+        else await peer.room.leave();
+      }
+      await waitFor(
+        () => (matchMaker.getLocalRoomById(roomId) === undefined ? true : undefined),
+        abrupt
+          ? 'empty active room disposed after every grace period expires'
+          : 'empty active room disposed after explicit leaves',
+      );
+      await assert.rejects(new Client(endpoint).reconnect(tokens[0]!));
+      await assert.rejects(new Client(endpoint).joinById(roomId, { name: '늦은손님' }));
+    }
+  });
+
+  test('a host leaving just before final settlement keeps its purchase and transfers restart ownership', async (t) => {
+    const peers = await makeParty(t);
+    const [host, second, third] = peers as [Peer, Peer, Peer];
+    await readyAndStart(peers);
+    await waitFor(
+      () =>
+        snapshot(host).phase === 'auction' && snapshot(host).round === GAME.rounds
+          ? true
+          : undefined,
+      'the final auction',
+    );
+    host.room.send('bid', bidPayload(host, 25));
+    await waitFor(
+      () => (snapshot(second).highestBidderId === host.room.sessionId ? true : undefined),
+      'the final bid accepted before its owner leaves',
+    );
+    const token = host.room.reconnectionToken;
+    await host.room.leave();
+    await waitFor(
+      () => (snapshot(second).hostId === second.room.sessionId ? true : undefined),
+      'restart authority transferred immediately after explicit leave',
+    );
+    await assert.rejects(new Client(endpoint).reconnect(token));
+    await waitFor(
+      () => (snapshot(second).phase === 'finished' ? true : undefined),
+      'the final settlement after host departure',
+    );
+    const finished = snapshot(second);
+    const departed = finished.players.find((player) => player.id === host.room.sessionId);
+    assert.ok(departed);
+    assert.equal(departed.connected, false);
+    assert.equal(departed.coins, 75);
+    assert.equal(departed.items.length, 1);
+    assert.equal(departed.items[0]?.price, 25);
+    assert.equal(finished.roundResults.at(-1)?.winnerId, host.room.sessionId);
+    assert.equal(
+      finished.results.find((result) => result.playerId === host.room.sessionId)?.coins,
+      75,
+    );
+    second.room.send('restart');
+    await waitFor(
+      () =>
+        snapshot(second).phase === 'lobby' && self(second).mission === null ? true : undefined,
+      'the new host restarts without the departed seat',
+    );
+    assert.deepEqual(
+      snapshot(second).players.map((player) => player.id),
+      [second.room.sessionId, third.room.sessionId],
+    );
+    assertPrivateMissions(peers);
+  });
+
+  test('malformed and repeated messages preserve game state and keep sync missions private', async (t) => {
+    const peers = await makeParty(t);
+    const [host, second, third] = peers as [Peer, Peer, Peer];
+    const malformed = [null, true, 7, 'unexpected', [], {}];
+    const beforeReady = snapshot(host).players;
+    for (const payload of malformed) await expectError(host, 'ready', payload, 'INVALID_READY');
+    assert.deepEqual((await sync(host)).players, beforeReady);
+    for (let repeat = 0; repeat < 3; repeat += 1) host.room.send('ready', { ready: true });
+    await sync(host);
+    assert.ok(snapshot(host).players.find((player) => player.id === host.room.sessionId)?.ready);
+    assert.equal(snapshot(host).players.length, 3);
+    await readyAndStart(peers);
+
+    const mission = self(host).mission;
+    const beforeSync = biddingState(snapshot(host));
+    for (const payload of [...malformed, { playerId: second.room.sessionId }]) {
+      const received = host.selfStates.length;
+      assert.deepEqual(biddingState(await sync(host, payload)), beforeSync);
+      await waitFor(
+        () => (host.selfStates.length > received ? true : undefined),
+        'the requested private sync',
+      );
+      assert.equal(self(host).playerId, host.room.sessionId);
+      assert.deepEqual(self(host).mission, mission);
+    }
+
+    for (const payload of malformed)
+      await expectError(second, 'bid', payload, 'INVALID_AUCTION_ID');
+    for (const amount of [NaN, Infinity, {}, [], true]) {
+      await expectError(second, 'bid', bidPayload(second, amount), 'INVALID_BID');
+    }
+    assert.deepEqual(biddingState(await sync(host)), beforeSync);
+    host.room.send('bid', bidPayload(host, 20));
+    await waitFor(
+      () => (snapshot(host).highestBid === 20 ? true : undefined),
+      'a normal bid after malformed messages',
+    );
+    const accepted = biddingState(snapshot(host));
+    for (let repeat = 0; repeat < 3; repeat += 1) {
+      await expectError(host, 'bid', bidPayload(host, 20), 'ALREADY_LEADING');
+    }
+    assert.deepEqual(biddingState(await sync(host)), accepted);
+
+    for (const payload of [...malformed, { emoji: 'unsupported' }]) {
+      await expectError(third, 'reaction', payload, 'INVALID_REACTION');
+    }
+    third.room.send('reaction', { emoji: REACTIONS[0], playerId: host.room.sessionId });
+    await waitFor(() => (host.reactions.length === 1 ? true : undefined), 'one accepted reaction');
+    assert.deepEqual(host.reactions[0], { playerId: third.room.sessionId, emoji: REACTIONS[0] });
+    for (let repeat = 0; repeat < 3; repeat += 1) {
+      await expectError(third, 'reaction', { emoji: REACTIONS[0] }, 'REACTION_COOLDOWN');
+    }
+    assert.equal(host.reactions.length, 1);
+    assert.deepEqual(biddingState(await sync(host)), accepted);
+    assertPrivateMissions(peers);
+  });
+
   test('reconnecting with the SDK token restores the same player, mission and auction balance', async (t) => {
     const peers = await makeParty(t);
     const [host, second] = peers as [Peer, Peer, Peer];
@@ -448,6 +640,10 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
           : undefined,
       'disconnected player remains in active game',
     );
+    await waitFor(
+      () => (snapshot(second).roundResults.length === 2 ? true : undefined),
+      'the accepted bid settles while its owner is disconnected',
+    );
 
     const restored = await observe(t, await new Client(endpoint).reconnect(token));
     assert.equal(restored.room.sessionId, playerId);
@@ -456,11 +652,18 @@ describe('real Colyseus multiplayer contract', { concurrency: false, timeout: 45
     assert.equal(snapshot(restored).players.filter((player) => player.id === playerId).length, 1);
     const player = snapshot(restored).players.find((candidate) => candidate.id === playerId);
     assert.ok(player?.connected);
-    assert.equal(player.coins, 85);
-    assert.deepEqual(player.items, purchased.items);
-    assert.equal(snapshot(restored).highestBidderId, playerId);
-    assert.equal(snapshot(restored).highestBid, 5);
-    await expectError(restored, 'bid', bidPayload(restored, 10), 'ALREADY_LEADING');
+    assert.equal(player.coins, 80);
+    assert.equal(player.items.length, 2);
+    assert.deepEqual(player.items[0], purchased.items[0]);
+    assert.equal(player.items[1]?.price, 5);
+    assert.equal(snapshot(restored).roundResults[1]?.winnerId, playerId);
+    assert.equal(snapshot(restored).roundResults[1]?.price, 5);
+    const synchronized = await sync(restored);
+    assert.deepEqual(
+      synchronized.players.find((candidate) => candidate.id === playerId),
+      (await sync(second)).players.find((candidate) => candidate.id === playerId),
+      'reconnection and repeated sync do not charge or award the purchase again',
+    );
     assertPrivateMissions([...peers, restored]);
   });
 

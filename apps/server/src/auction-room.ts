@@ -6,6 +6,7 @@ import { GameEngine, GameRuleError, validateName } from './game-engine.js';
 export interface RoomTiming {
   roundMs?: number;
   revealMs?: number;
+  reconnectionSeconds?: number;
 }
 const activeRoomCodes = new Set<string>();
 const codeAlphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -119,7 +120,10 @@ export class AuctionRoom extends Room<{ state: object }> {
     this.engine.setConnected(client.sessionId, false);
     this.publish();
     // Colyseus calls onLeave after the grace period expires, and onReconnect after success.
-    void this.allowReconnection(client, 30).catch(() => {});
+    void this.allowReconnection(
+      client,
+      this.timing.reconnectionSeconds ?? GAME.reconnectionSeconds,
+    ).catch(() => {});
   }
 
   onReconnect(client: Client): void {

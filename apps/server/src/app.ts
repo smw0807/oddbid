@@ -11,6 +11,7 @@ export interface GameServerOptions {
   host?: string;
   roundMs?: number;
   revealMs?: number;
+  reconnectionSeconds?: number;
   webDist?: string;
 }
 
@@ -46,7 +47,11 @@ export function createGameServer(options: GameServerOptions = {}): GameServer {
   });
   server.define(
     'auction',
-    configuredAuctionRoom({ roundMs: options.roundMs, revealMs: options.revealMs }),
+    configuredAuctionRoom({
+      roundMs: options.roundMs,
+      revealMs: options.revealMs,
+      reconnectionSeconds: options.reconnectionSeconds,
+    }),
   );
   return {
     server,

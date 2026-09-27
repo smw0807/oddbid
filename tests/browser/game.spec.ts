@@ -112,6 +112,13 @@ test('three browsers bid, restore a session, finish five rounds, and play again'
     expect(collectionMissions).toBeGreaterThanOrEqual(1);
     await noHorizontalOverflow(mobile);
     await mobile.screenshot({ path: testInfo.outputPath('mission-mobile.png'), fullPage: true });
+    // Keep an error on a guest who will not send the restart message, so a fresh
+    // lobby must clear it through the incoming snapshot rather than a local send.
+    await guest
+      .getByRole('button', { name: /반응 보내기/ })
+      .first()
+      .dblclick();
+    await expect(guest.getByRole('alert')).toContainText('리액션은 잠시 쉬었다');
     await expect(host.locator('.results-page')).toBeVisible({ timeout: 40000 });
     await expect(host.locator('.result-row')).toHaveCount(3);
     const guestResult = host.locator('.result-row').filter({ hasText: '바나나친구' });
@@ -124,17 +131,26 @@ test('three browsers bid, restore a session, finish five rounds, and play again'
     await noHorizontalOverflow(mobile);
     await host.screenshot({ path: testInfo.outputPath('results-desktop.png'), fullPage: true });
     await expect(host.locator('.revealed-mission')).toHaveCount(3);
+    await expect(guest.getByRole('alert')).toContainText('리액션은 잠시 쉬었다');
     await host.getByRole('button', { name: /한 판 더/ }).click();
     for (const page of pages) {
       await expect(page.locator('.lobby')).toBeVisible();
       await expect(page.getByRole('button', { name: '준비 완료', exact: true })).toBeEnabled();
+      await expect(page.getByRole('alert')).toHaveCount(0);
     }
     await expect(host.getByRole('button', { name: /경매 시작/ })).toBeDisabled();
     for (const page of pages)
       await page.getByRole('button', { name: '준비 완료', exact: true }).click();
     await expect(host.getByRole('button', { name: /경매 시작/ })).toBeEnabled();
     await host.getByRole('button', { name: /경매 시작/ }).click();
-    for (const page of pages) await expect(page.locator('.auction-page')).toBeVisible();
+    for (const page of pages) {
+      await expect(page.locator('.auction-page')).toBeVisible();
+      await expect(page.locator('.mission-content')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /나만의 비밀 미션/ })).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+    }
     await host.getByRole('button', { name: /5코인 입찰하기/ }).click();
     for (const page of [guest, mobile]) {
       await expect(page.locator('.current-bidder')).toContainText('오리방장');

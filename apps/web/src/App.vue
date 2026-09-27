@@ -96,6 +96,21 @@ watch(
     if (phase === 'lobby') selectedBid.value = GAME.bidStep;
   },
 );
+watch(
+  () => snapshot.value?.roomId,
+  () => {
+    clearTimeout(copyTimer);
+    copied.value = false;
+    copyFallback.value = '';
+    missionVisible.value = false;
+  },
+);
+watch(
+  () => self.value?.mission?.id,
+  () => {
+    missionVisible.value = false;
+  },
+);
 
 onMounted(() => {
   clock = setInterval(() => {
@@ -119,17 +134,20 @@ function join(): void {
 }
 
 async function shareRoom(): Promise<void> {
+  const roomId = snapshot.value?.roomId;
+  if (!roomId) return;
   const url = new URL(location.href);
-  url.searchParams.set('room', snapshot.value?.roomId || '');
+  url.searchParams.set('room', roomId);
   try {
     await navigator.clipboard.writeText(url.toString());
+    if (snapshot.value?.roomId !== roomId) return;
     copied.value = true;
     clearTimeout(copyTimer);
     copyTimer = setTimeout(() => {
       copied.value = false;
     }, 2500);
   } catch {
-    copyFallback.value = url.toString();
+    if (snapshot.value?.roomId === roomId) copyFallback.value = url.toString();
   }
 }
 
@@ -154,7 +172,7 @@ function quit(): void {
 }
 
 function goHome(): void {
-  if (snapshot.value) quit();
+  if (snapshot.value || busy.value || recovering.value) quit();
   else window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -211,6 +229,7 @@ function roundName(round: number): string {
     <div v-if="busy && !snapshot" class="connection-status" role="status">
       <span class="connecting-dot" aria-hidden="true"></span>경매장에 연결하고 있어요. 잠시만 기다려
       주세요.
+      <button class="text-button" @click="quit">연결 취소</button>
     </div>
 
     <main v-if="!snapshot" class="landing">

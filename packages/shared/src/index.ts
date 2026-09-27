@@ -6,6 +6,7 @@ export const GAME = {
   rounds: 5,
   roundMs: 25000,
   revealMs: 4000,
+  reconnectionSeconds: 30,
 } as const;
 export type Phase = 'lobby' | 'auction' | 'reveal' | 'finished';
 export type ItemId =
