@@ -9,3 +9,5 @@ coverage/
 *.log
 .DS_Store
 /work/
+.vercel/
+deploy/server.env

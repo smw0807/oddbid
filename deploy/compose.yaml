@@ -1,0 +1,62 @@
+name: oddbid
+
+services:
+  backend:
+    image: ${ODDBID_IMAGE:?Set ODDBID_IMAGE through update-server.sh}
+    platform: linux/amd64
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 35s
+    env_file:
+      - /opt/oddbid/server.env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '2567'
+      APP_REVISION: ${APP_REVISION:?Set APP_REVISION through update-server.sh}
+    ports:
+      - '127.0.0.1:2567:2567'
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  caddy:
+    # Official image patch version checked at https://hub.docker.com/_/caddy.
+    image: caddy:2.11.6-alpine
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN during bootstrap}
+      CADDY_EMAIL: ${CADDY_EMAIL:?Set CADDY_EMAIL during bootstrap}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      # A release directory is immutable. Changing it recreates Caddy, avoiding
+      # stale bind-mounted file inodes when deploy configuration changes.
+      - ${ODDBID_RELEASE_DIR:?Set ODDBID_RELEASE_DIR through update-server.sh}:/etc/caddy:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  caddy_data:
+  caddy_config:

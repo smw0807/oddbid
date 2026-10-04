@@ -1,0 +1,27 @@
+# Only the server build inputs enter the Docker build context.
+**
+!package.json
+!package-lock.json
+!tsconfig.base.json
+!apps/
+!apps/server/
+!apps/server/package.json
+!apps/server/build.mjs
+!apps/server/tsconfig.json
+!apps/server/src/
+!apps/server/src/**
+!apps/web/
+!apps/web/package.json
+!packages/
+!packages/shared/
+!packages/shared/package.json
+!packages/shared/src/
+!packages/shared/src/**
+!deploy/
+!deploy/Dockerfile
+# Test source and any local environment files are unnecessary build inputs.
+**/*.test.ts
+**/.env
+**/.env.*
+**/node_modules
+**/dist
