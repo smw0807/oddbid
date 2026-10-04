@@ -5,8 +5,6 @@ import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
 import express from 'express';
 import { configuredAuctionRoom } from './auction-room.js';
-import { readServerConfig, type ServerEnvironment } from './config.js';
-import { installHttpOriginGuard, isOriginAllowed } from './origin-policy.js';
 
 export interface GameServerOptions {
   port?: number;
@@ -15,7 +13,6 @@ export interface GameServerOptions {
   revealMs?: number;
   reconnectionSeconds?: number;
   webDist?: string;
-  environment?: ServerEnvironment;
 }
 
 export interface GameServer {
@@ -26,9 +23,8 @@ export interface GameServer {
 }
 
 export function createGameServer(options: GameServerOptions = {}): GameServer {
-  const config = readServerConfig(options.environment);
-  const port = options.port ?? config.port;
-  const host = options.host ?? config.host;
+  const port = options.port ?? 2567;
+  const host = options.host ?? '0.0.0.0';
   const httpServer = createServer();
   const server = new Server({
     transport: new WebSocketTransport({
@@ -36,19 +32,12 @@ export function createGameServer(options: GameServerOptions = {}): GameServer {
       maxPayload: 4096,
       pingInterval: 5000,
       pingMaxRetries: 2,
-      beforeUpgrade: (request) => {
-        if (!isOriginAllowed(request.headers.get('origin'), config.allowedOrigins)) {
-          return Response.json({ error: 'Origin is not allowed.' }, { status: 403 });
-        }
-      },
     }),
     greet: false,
     gracefullyShutdown: false,
     express: (app) => {
       app.disable('x-powered-by');
-      app.get('/health', (_request, response) =>
-        response.json({ ok: true, service: 'oddbid', revision: config.revision }),
-      );
+      app.get('/health', (_request, response) => response.json({ ok: true, service: 'oddbid' }));
       if (options.webDist && existsSync(resolve(options.webDist, 'index.html'))) {
         const webDist = resolve(options.webDist);
         app.use(express.static(webDist));
@@ -74,12 +63,7 @@ export function createGameServer(options: GameServerOptions = {}): GameServer {
       });
       httpServer.once('error', rejectBind);
       try {
-        await Promise.race([
-          server.listen(port, host, undefined, () =>
-            installHttpOriginGuard(httpServer, config.allowedOrigins),
-          ),
-          bindFailure,
-        ]);
+        await Promise.race([server.listen(port, host), bindFailure]);
       } catch (error: unknown) {
         await server.gracefullyShutdown(false);
         throw error;

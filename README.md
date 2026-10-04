@@ -6,7 +6,7 @@ Vue 3 + TypeScript + Vite로 화면을, Node.js + Colyseus로 게임 서버를 �
 
 ## 실행
 
-Node.js 22.12 이상이 필요합니다. 개발·CI·배포 기준은 `.node-version`의 Node.js 24.21.0입니다.
+Node.js 22.12 이상이 필요합니다. 개발·검증에는 Node.js 24를 사용했습니다.
 
 ```sh
 npm ci
@@ -25,14 +25,6 @@ npm start
 ```
 
 [http://localhost:2567](http://localhost:2567)에서 실행됩니다. 포트 변경은 `PORT=3000 npm start`로 할 수 있습니다. 웹과 게임 서버를 별도로 호스팅할 때는 웹 빌드 전에 `VITE_SERVER_URL`에 게임 서버의 WebSocket 주소를 지정합니다. 인터넷 공개 환경에서는 HTTPS/WSS를 사용하세요.
-
-## 배포와 브랜치
-
-개발은 `develop`에서 진행합니다. PR은 CI 검증만 실행하고, `main` 병합 후 같은 커밋을 다시 검증한 다음 **EC2 backend → 공개 HTTPS/Origin 확인 → Vercel frontend** 순서로 운영 배포합니다. Vercel Git 자동 배포와 PR Preview는 끄고 GitHub Actions에서 배포를 관리합니다.
-
-EC2는 Docker Compose의 게임 서버 1개와 Caddy HTTPS 프록시를 사용합니다. GitHub는 AWS OIDC로 인증하고 SSM으로 배포하며, SSH 개인키와 고정 AWS access key는 사용하지 않습니다. 운영 서버에는 정확한 frontend HTTPS origin을 `ALLOWED_ORIGINS`에 등록해야 합니다. Vercel 빌드에는 `VITE_SERVER_URL=wss://...`이 필요합니다.
-
-설정 코드와 검증은 준비했으며, **실제 클라우드 배포는 아직 하지 않았습니다.** EC2·ECR·도메인·Vercel 빈 프로젝트와 GitHub `production` 환경을 준비하는 순서, 필요한 변수, 실패 복구는 [배포 가이드](docs/DEPLOYMENT.md)를 따르세요. 배포·재시작 시 진행 중인 방과 게임은 사라집니다.
 
 ## 게임 규칙
 
@@ -77,8 +69,6 @@ npm run build
 npm run test:e2e
 npm run test:dev
 npm run format:check
-node --test deploy/*.test.mjs
-python3 deploy/update-server.test.py
 ```
 
 브라우저가 설치되어 있지 않다면 먼저 `npx playwright install chromium webkit`을 실행하세요. `npm test`는 순수 규칙 테스트와 실제 WebSocket 클라이언트 통합 테스트를 실행합니다. 브라우저 테스트는 짧은 라운드 시간을 사용하는 별도 테스트 서버를 실행합니다. 이 설정은 참가자 메시지로 변경할 수 없습니다.
@@ -87,14 +77,12 @@ python3 deploy/update-server.test.py
 
 2026-09-27 연결·퇴장 보강 후 로컬 검증: TypeScript 검사, 게임 엔진 19개 + 실제 소켓 통합 10개, Chromium/WebKit 브라우저 테스트 18개(연결 12개·게임 6개) + 개발 모드 테스트 2개, 전체 빌드, Prettier 검사가 통과했습니다. 기존 입찰·정산과 함께 재접속·만료·방장 이전·전원 퇴장·입장 취소·지연 응답 폐기·재경기 상태 초기화를 확인했습니다. 기본 30초 유예와 실제 서버 프로세스 재시작도 별도 SDK 검사로 확인했습니다. 범위와 재현 방법은 [연결 검증 기록](docs/connection-check.md)에 정리했습니다. 실제 Safari/iPhone/Android와 모바일 네트워크 전환, 인터넷 배포는 미검증입니다.
 
-2026-10-04 배포 준비 검증: 타입·빌드·형식 검사, 앱 테스트 41개, Chromium/WebKit E2E 18개와 개발 모드 2개, 배포 helper 6개와 rollback mock 7개를 확인했습니다. 로컬 ARM64 컨테이너에서 실제 SDK/WebSocket 연결도 통과했습니다. GitHub의 native amd64 빌드와 실제 EC2·Vercel 배포는 인프라 준비 후 확인해야 합니다. 세부 범위는 [배포 검증 기록](docs/DEPLOYMENT.md#10-배포-준비-코드-검증-기록)에 있습니다.
-
 ## MVP 범위와 운영 전 남은 작업
 
 현재 방과 게임 기록은 단일 서버의 메모리에 저장됩니다. 서버를 재시작하면 게임은 사라집니다. 일시적인 연결 끊김은 30초 동안 복귀할 수 있으며, 시간이 지나면 다른 참가자는 게임을 계속할 수 있습니다. 연습방의 상대는 규칙으로 움직이는 봇입니다.
 
 연결 복구 중에는 입찰을 차단하고, 최신 공개 상태와 본인 상태를 모두 받은 뒤 조작을 허용합니다. 입장·복구 중 취소하거나 퇴장하면 늦은 응답으로 이전 방에 돌아가지 않습니다. 복귀할 수 없으면 사유와 새 입장 화면을 표시합니다.
 
-경매 식별자 검증과 연결·퇴장 경계 보강, PR CI와 EC2·Vercel 자동 배포 설정까지 구현했습니다. 다음 작업은 배포 가이드의 인프라 준비와 첫 배포, 실제 모바일 기기의 한 판 완주입니다. 단계별 상태와 완료 기준은 [다음 작업 계획서](docs/NEXT_STEPS.md)에 정리했습니다.
+경매 식별자 검증과 연결·퇴장 경계 보강까지 구현했습니다. 다음 작업은 실제 모바일 기기에서 초대부터 재경기까지 완주하며 불편을 확인하는 것이며, CI 자동 검증을 병행할 수 있습니다. 단계별 상태와 완료 기준은 [다음 작업 계획서](docs/NEXT_STEPS.md)에 정리했습니다.
 
-실제 인터넷 배포, 운영용 접속 제한, 장시간 부하 및 실제 모바일 기기 검증은 남아 있습니다. Origin 검사는 사용자 인증이나 요청량 제한을 대신하지 않습니다. 다중 서버/Redis, 영구 전적, 계정 인증은 플레이·운영 요구가 확인된 뒤 검토합니다.
+실제 인터넷 배포, 운영용 접속 제한과 CI, 장시간 부하 및 실제 모바일 기기 검증은 남아 있습니다. 다중 서버/Redis, 영구 전적, 계정 인증은 플레이·운영 요구가 확인된 뒤 검토합니다.
